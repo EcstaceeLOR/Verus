@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "source_id": "src_01ARZ3NDEKTSV4RRFFQ69G5FAX",
+  "kind": "issuer",
+  "display_name": "Example Holdings investor relations",
+  "identity_state": "verified",
+  "canonical_origins": [
+    "https://example.com"
+  ],
+  "created_at": "2026-10-01T09:00:00Z",
+  "updated_at": "2026-10-01T09:20:00Z",
+  "extensions": {
+    "com.example.registry": {
+      "reference": "issuer-42"
+    }
+  }
+}

@@ -1,0 +1,370 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verus.security/contracts/v1/verus.schema.json",
+  "title": "Verus v1 domain contracts",
+  "$defs": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.[0-9]{3})?Z$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{1,31}_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "symbol": {
+      "type": "string",
+      "pattern": "^[A-Z0-9.:-]{1,32}$"
+    },
+    "extensions": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)+$"
+      },
+      "additionalProperties": true,
+      "default": {}
+    },
+    "subject": {
+      "type": "object",
+      "required": ["kind", "symbols"],
+      "properties": {
+        "kind": {
+          "enum": ["equity", "etf", "rtoken", "stock_perpetual", "market", "unknown"]
+        },
+        "symbols": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/symbol" },
+          "uniqueItems": true,
+          "maxItems": 100
+        },
+        "entity_ids": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "uniqueItems": true,
+          "maxItems": 100
+        }
+      },
+      "additionalProperties": false
+    },
+    "citation": {
+      "type": "object",
+      "required": ["source_id", "snapshot_digest", "locator"],
+      "properties": {
+        "source_id": { "$ref": "#/$defs/identifier" },
+        "snapshot_digest": { "$ref": "#/$defs/digest" },
+        "locator": {
+          "type": "object",
+          "minProperties": 1,
+          "properties": {
+            "page": { "type": "integer", "minimum": 1 },
+            "section": { "type": "string", "minLength": 1, "maxLength": 256 },
+            "json_pointer": { "type": "string", "pattern": "^(?:/(?:[^~/]|~[01])*)*$" },
+            "text_start": { "type": "integer", "minimum": 0 },
+            "text_end": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "excerpt_digest": { "$ref": "#/$defs/digest" }
+      },
+      "additionalProperties": false
+    },
+    "claimValue": {
+      "oneOf": [
+        { "type": "string", "maxLength": 4096 },
+        { "type": "boolean" },
+        {
+          "type": "object",
+          "required": ["decimal"],
+          "properties": {
+            "decimal": {
+              "type": "string",
+              "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+            },
+            "unit": { "type": "string", "minLength": 1, "maxLength": 32 },
+            "currency": { "type": "string", "pattern": "^[A-Z]{3,8}$" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "claim": {
+      "type": "object",
+      "required": ["claim_id", "kind", "statement", "value", "verification", "confidence_bps", "citations"],
+      "properties": {
+        "claim_id": { "$ref": "#/$defs/identifier" },
+        "kind": {
+          "enum": ["financial_metric", "guidance", "corporate_action", "market_event", "product_announcement", "other"]
+        },
+        "statement": { "type": "string", "minLength": 1, "maxLength": 4096 },
+        "value": { "$ref": "#/$defs/claimValue" },
+        "period": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "verification": {
+          "enum": ["verified", "contradicted", "unsupported", "ambiguous", "pending"]
+        },
+        "confidence_bps": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "citations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/citation" },
+          "minItems": 1,
+          "maxItems": 50
+        },
+        "extensions": { "$ref": "#/$defs/extensions" }
+      },
+      "additionalProperties": false
+    },
+    "finding": {
+      "type": "object",
+      "required": ["finding_id", "category", "severity", "detector_id", "reason_code", "location"],
+      "properties": {
+        "finding_id": { "$ref": "#/$defs/identifier" },
+        "category": {
+          "enum": ["direct_prompt_injection", "indirect_prompt_injection", "obfuscation", "hidden_content", "source_mismatch", "stale_evidence", "contradiction", "parser_risk", "policy_failure", "other"]
+        },
+        "severity": { "enum": ["info", "low", "medium", "high", "critical"] },
+        "detector_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "reason_code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{2,63}$" },
+        "confidence_bps": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "location": {
+          "type": "object",
+          "required": ["representation"],
+          "properties": {
+            "representation": { "enum": ["raw", "canonical", "decoded", "metadata", "ocr"] },
+            "json_pointer": { "type": "string", "pattern": "^(?:/(?:[^~/]|~[01])*)*$" },
+            "text_start": { "type": "integer", "minimum": 0 },
+            "text_end": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
+        "extensions": { "$ref": "#/$defs/extensions" }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["evidence_id", "source_id", "snapshot_digest", "identity_state", "retrieved_at", "freshness"],
+      "properties": {
+        "evidence_id": { "$ref": "#/$defs/identifier" },
+        "source_id": { "$ref": "#/$defs/identifier" },
+        "snapshot_digest": { "$ref": "#/$defs/digest" },
+        "identity_state": { "enum": ["verified", "mismatched", "unknown"] },
+        "published_at": { "$ref": "#/$defs/timestamp" },
+        "retrieved_at": { "$ref": "#/$defs/timestamp" },
+        "freshness": { "enum": ["current", "stale", "superseded", "unknown"] },
+        "canonical_url": { "type": "string", "pattern": "^https://", "maxLength": 2048 },
+        "extensions": { "$ref": "#/$defs/extensions" }
+      },
+      "additionalProperties": false
+    },
+    "conflict": {
+      "type": "object",
+      "required": ["conflict_id", "claim_ids", "status"],
+      "properties": {
+        "conflict_id": { "$ref": "#/$defs/identifier" },
+        "claim_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/identifier" },
+          "minItems": 2,
+          "uniqueItems": true
+        },
+        "status": { "enum": ["unresolved", "resolved", "superseded"] },
+        "resolution": { "type": "string", "minLength": 1, "maxLength": 2048 }
+      },
+      "additionalProperties": false
+    },
+    "policyRef": {
+      "type": "object",
+      "required": ["policy_id", "version", "digest"],
+      "properties": {
+        "policy_id": { "$ref": "#/$defs/identifier" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "digest": { "$ref": "#/$defs/digest" }
+      },
+      "additionalProperties": false
+    },
+    "componentVersion": {
+      "type": "object",
+      "required": ["component", "version", "digest"],
+      "properties": {
+        "component": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{1,63}$" },
+        "version": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "digest": { "$ref": "#/$defs/digest" }
+      },
+      "additionalProperties": false
+    },
+    "signature": {
+      "type": "object",
+      "required": ["algorithm", "key_id", "signed_at", "value"],
+      "properties": {
+        "algorithm": { "const": "Ed25519" },
+        "key_id": { "$ref": "#/$defs/identifier" },
+        "signed_at": { "$ref": "#/$defs/timestamp" },
+        "value": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{86}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "contextCapsule": {
+      "type": "object",
+      "required": ["schema_version", "capsule_id", "workspace_id", "scan_id", "input_digest", "created_at", "as_of", "subject", "claims", "findings", "evidence", "conflicts", "disposition", "policy", "components", "extensions", "signature"],
+      "properties": {
+        "schema_version": { "$ref": "#/$defs/schemaVersion" },
+        "capsule_id": { "$ref": "#/$defs/identifier" },
+        "workspace_id": { "$ref": "#/$defs/identifier" },
+        "scan_id": { "$ref": "#/$defs/identifier" },
+        "input_digest": { "$ref": "#/$defs/digest" },
+        "created_at": { "$ref": "#/$defs/timestamp" },
+        "as_of": { "$ref": "#/$defs/timestamp" },
+        "subject": { "$ref": "#/$defs/subject" },
+        "claims": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/claim" },
+          "maxItems": 1000
+        },
+        "findings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/finding" },
+          "maxItems": 1000
+        },
+        "evidence": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/evidence" },
+          "maxItems": 1000
+        },
+        "conflicts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/conflict" },
+          "maxItems": 1000
+        },
+        "disposition": { "enum": ["allow", "review", "block"] },
+        "policy": { "$ref": "#/$defs/policyRef" },
+        "components": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/componentVersion" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "extensions": { "$ref": "#/$defs/extensions" },
+        "signature": { "$ref": "#/$defs/signature" }
+      },
+      "additionalProperties": false
+    },
+    "ingestionRequest": {
+      "type": "object",
+      "required": ["schema_version", "request_id", "workspace_id", "submitted_at", "input", "extensions"],
+      "properties": {
+        "schema_version": { "$ref": "#/$defs/schemaVersion" },
+        "request_id": { "$ref": "#/$defs/identifier" },
+        "workspace_id": { "$ref": "#/$defs/identifier" },
+        "submitted_at": { "$ref": "#/$defs/timestamp" },
+        "input": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["kind", "url"],
+              "properties": {
+                "kind": { "const": "url" },
+                "url": { "type": "string", "pattern": "^https://", "maxLength": 2048 }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": ["kind", "text", "media_type"],
+              "properties": {
+                "kind": { "const": "text" },
+                "text": { "type": "string", "minLength": 1, "maxLength": 1000000 },
+                "media_type": { "enum": ["text/plain", "text/html", "application/xml", "application/json"] }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": ["kind", "upload_id", "media_type", "size_bytes", "digest"],
+              "properties": {
+                "kind": { "const": "upload" },
+                "upload_id": { "$ref": "#/$defs/identifier" },
+                "media_type": { "type": "string", "minLength": 1, "maxLength": 255 },
+                "size_bytes": { "type": "integer", "minimum": 1 },
+                "digest": { "$ref": "#/$defs/digest" }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": ["kind", "source_id", "event_id", "payload_digest"],
+              "properties": {
+                "kind": { "const": "feed_event" },
+                "source_id": { "$ref": "#/$defs/identifier" },
+                "event_id": { "type": "string", "minLength": 1, "maxLength": 256 },
+                "payload_digest": { "$ref": "#/$defs/digest" }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "extensions": { "$ref": "#/$defs/extensions" }
+      },
+      "additionalProperties": false
+    },
+    "sourceRecord": {
+      "type": "object",
+      "required": ["schema_version", "source_id", "kind", "display_name", "identity_state", "canonical_origins", "created_at", "updated_at", "extensions"],
+      "properties": {
+        "schema_version": { "$ref": "#/$defs/schemaVersion" },
+        "source_id": { "$ref": "#/$defs/identifier" },
+        "kind": { "enum": ["regulator", "issuer", "exchange", "news", "user", "unknown"] },
+        "display_name": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "identity_state": { "enum": ["verified", "mismatched", "unknown"] },
+        "canonical_origins": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^https://", "maxLength": 2048 },
+          "uniqueItems": true,
+          "maxItems": 100
+        },
+        "created_at": { "$ref": "#/$defs/timestamp" },
+        "updated_at": { "$ref": "#/$defs/timestamp" },
+        "extensions": { "$ref": "#/$defs/extensions" }
+      },
+      "additionalProperties": false
+    },
+    "policyVerdict": {
+      "type": "object",
+      "required": ["schema_version", "verdict_id", "scan_id", "evaluated_at", "disposition", "policy", "finding_ids", "reason_codes", "extensions"],
+      "properties": {
+        "schema_version": { "$ref": "#/$defs/schemaVersion" },
+        "verdict_id": { "$ref": "#/$defs/identifier" },
+        "scan_id": { "$ref": "#/$defs/identifier" },
+        "evaluated_at": { "$ref": "#/$defs/timestamp" },
+        "disposition": { "enum": ["allow", "review", "block"] },
+        "policy": { "$ref": "#/$defs/policyRef" },
+        "finding_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/identifier" },
+          "uniqueItems": true
+        },
+        "reason_codes": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{2,63}$" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "extensions": { "$ref": "#/$defs/extensions" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "oneOf": [
+    { "$ref": "#/$defs/contextCapsule" },
+    { "$ref": "#/$defs/ingestionRequest" },
+    { "$ref": "#/$defs/sourceRecord" },
+    { "$ref": "#/$defs/policyVerdict" }
+  ]
+}

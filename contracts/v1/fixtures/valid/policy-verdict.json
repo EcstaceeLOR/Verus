@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "verdict_id": "verdict_01ARZ3NDEKTSV4RRFFQ69G5FAY",
+  "scan_id": "scan_01ARZ3NDEKTSV4RRFFQ69G5FAZ",
+  "evaluated_at": "2026-10-01T09:30:03.000Z",
+  "disposition": "review",
+  "policy": {
+    "policy_id": "policy_01ARZ3NDEKTSV4RRFFQ69G5FB0",
+    "version": "1.2.0",
+    "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "finding_ids": [
+    "finding_01ARZ3NDEKTSV4RRFFQ69G5FB1"
+  ],
+  "reason_codes": [
+    "SOURCE_IDENTITY_UNKNOWN"
+  ],
+  "extensions": {}
+}
