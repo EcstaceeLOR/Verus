@@ -142,6 +142,10 @@ Verus is being built around the following principles:
 - **No security theatre.** Verus will publish its threat model, benchmark
   corpus, limitations, and residual risks.
 
+The normative [threat model](docs/security/threat-model.md) and
+[policy and decision semantics](docs/security/policy-semantics.md) define these
+guarantees, precedence rules, failure behavior, and residual risks.
+
 Verus is one layer in a defense-in-depth architecture. It does not replace
 exchange permissions, human approval, position limits, or an outbound execution
 firewall.
