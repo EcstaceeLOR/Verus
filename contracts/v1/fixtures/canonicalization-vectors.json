@@ -1,0 +1,35 @@
+[
+  {
+    "name": "member-order-and-unicode",
+    "input": {
+      "z": [
+        3,
+        true,
+        null
+      ],
+      "a": "Verus",
+      "nested": {
+        "beta": "€",
+        "alpha": 17
+      }
+    },
+    "canonical": "{\"a\":\"Verus\",\"nested\":{\"alpha\":17,\"beta\":\"€\"},\"z\":[3,true,null]}",
+    "sha256": "sha256:1587c5aedb51c490501abef3bb27cba325be92ef803aa18770a7a6fb0de8f887"
+  },
+  {
+    "name": "signature-envelope-shape",
+    "input": {
+      "signature_metadata": {
+        "signed_at": "2026-10-01T09:30:04.000Z",
+        "key_id": "key_01ARZ3NDEKTSV4RRFFQ69G5FB5",
+        "algorithm": "Ed25519"
+      },
+      "capsule": {
+        "schema_version": "1.0",
+        "disposition": "block"
+      }
+    },
+    "canonical": "{\"capsule\":{\"disposition\":\"block\",\"schema_version\":\"1.0\"},\"signature_metadata\":{\"algorithm\":\"Ed25519\",\"key_id\":\"key_01ARZ3NDEKTSV4RRFFQ69G5FB5\",\"signed_at\":\"2026-10-01T09:30:04.000Z\"}}",
+    "sha256": "sha256:58ba80219b4583e887aa6dadd96b0d529055713320762f984cc15854d35720ab"
+  }
+]

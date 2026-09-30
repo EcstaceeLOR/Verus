@@ -1,0 +1,5 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verus.security/contracts/v1/policy-verdict.schema.json",
+  "$ref": "verus.schema.json#/$defs/policyVerdict"
+}

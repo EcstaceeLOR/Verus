@@ -1,0 +1,5 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://verus.security/contracts/v1/ingestion-request.schema.json",
+  "$ref": "verus.schema.json#/$defs/ingestionRequest"
+}

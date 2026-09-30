@@ -66,8 +66,10 @@ and a disposition. In strict mode, it does not receive the original raw content.
 ## Context Capsules
 
 A Context Capsule is the versioned output contract between Verus and a
-downstream agent. The exact v1 schema will be published and versioned in this
-repository. A representative shape is:
+downstream agent. The published
+[v1 wire contract](contracts/v1/README.md) defines its exact JSON Schema,
+TypeScript types, deterministic serialization, signature input, compatibility
+rules, and conformance fixtures. A simplified shape is:
 
 ```json
 {
@@ -78,25 +80,40 @@ repository. A representative shape is:
     "kind": "equity",
     "symbols": ["NVDA"]
   },
-  "facts": [
+  "claims": [
     {
-      "claim": "The issuer updated its quarterly revenue guidance.",
-      "source_id": "src_01...",
-      "published_at": "2026-09-30T20:05:00Z",
-      "confidence": 0.98
+      "claim_id": "claim_01...",
+      "statement": "The issuer updated its quarterly revenue guidance.",
+      "verification": "verified",
+      "confidence_bps": 9800,
+      "citations": []
     }
   ],
   "findings": [
     {
       "category": "indirect_prompt_injection",
       "severity": "high",
-      "location": "document.body[17]"
+      "reason_code": "INDIRECT_INSTRUCTION_DETECTED",
+      "location": {
+        "representation": "canonical",
+        "text_start": 942,
+        "text_end": 1017
+      }
     }
   ],
   "conflicts": [],
   "disposition": "review",
-  "policy_version": "policy_01...",
-  "signature": "ed25519:..."
+  "policy": {
+    "policy_id": "policy_01...",
+    "version": "1.0.0",
+    "digest": "sha256:..."
+  },
+  "signature": {
+    "algorithm": "Ed25519",
+    "key_id": "key_01...",
+    "signed_at": "2026-09-30T20:05:04Z",
+    "value": "..."
+  }
 }
 ```
 

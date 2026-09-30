@@ -1,0 +1,17 @@
+[
+  {
+    "fixture": "unknown-field.json",
+    "schema": "ingestion-request.schema.json",
+    "expected_keyword": "additionalProperties"
+  },
+  {
+    "fixture": "incompatible-version.json",
+    "schema": "ingestion-request.schema.json",
+    "expected_keyword": "const"
+  },
+  {
+    "fixture": "floating-confidence.json",
+    "schema": "policy-verdict.schema.json",
+    "expected_keyword": "additionalProperties"
+  }
+]
