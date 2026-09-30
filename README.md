@@ -155,6 +155,9 @@ firewall.
 
 The security objectives, trust boundaries, abuse cases, control mappings, and
 residual risks are maintained in the [Verus Threat Model](docs/security/threat-model.md).
+The approved [production architecture](docs/architecture/README.md) defines
+runtime isolation, dependency direction, storage, execution, and supported
+deployment topologies.
 
 ## Product surfaces
 
