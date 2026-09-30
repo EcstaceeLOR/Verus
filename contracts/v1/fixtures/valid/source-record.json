@@ -4,6 +4,8 @@
   "kind": "issuer",
   "display_name": "Example Holdings investor relations",
   "identity_state": "verified",
+  "source_class": "primary",
+  "source_tier": "verified_primary",
   "canonical_origins": [
     "https://example.com"
   ],

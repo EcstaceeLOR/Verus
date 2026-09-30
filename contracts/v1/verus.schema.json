@@ -153,6 +153,15 @@
         "source_id": { "$ref": "#/$defs/identifier" },
         "snapshot_digest": { "$ref": "#/$defs/digest" },
         "identity_state": { "enum": ["verified", "mismatched", "unknown"] },
+        "source_class": {
+          "enum": ["primary", "secondary", "user_supplied", "unknown"]
+        },
+        "source_tier": {
+          "enum": ["blocked", "unverified", "attributed", "verified_secondary", "verified_primary"]
+        },
+        "quality_grade": {
+          "enum": ["unusable", "weak", "limited", "supported", "corroborated"]
+        },
         "published_at": { "$ref": "#/$defs/timestamp" },
         "retrieved_at": { "$ref": "#/$defs/timestamp" },
         "freshness": { "enum": ["current", "stale", "superseded", "unknown"] },
@@ -323,6 +332,12 @@
         "kind": { "enum": ["regulator", "issuer", "exchange", "news", "user", "unknown"] },
         "display_name": { "type": "string", "minLength": 1, "maxLength": 256 },
         "identity_state": { "enum": ["verified", "mismatched", "unknown"] },
+        "source_class": {
+          "enum": ["primary", "secondary", "user_supplied", "unknown"]
+        },
+        "source_tier": {
+          "enum": ["blocked", "unverified", "attributed", "verified_secondary", "verified_primary"]
+        },
         "canonical_origins": {
           "type": "array",
           "items": { "type": "string", "pattern": "^https://", "maxLength": 2048 },

@@ -104,6 +104,14 @@ export interface Evidence {
   readonly source_id: VerusId;
   readonly snapshot_digest: Sha256Digest;
   readonly identity_state: "verified" | "mismatched" | "unknown";
+  readonly source_class?: "primary" | "secondary" | "user_supplied" | "unknown";
+  readonly source_tier?:
+    | "blocked"
+    | "unverified"
+    | "attributed"
+    | "verified_secondary"
+    | "verified_primary";
+  readonly quality_grade?: "unusable" | "weak" | "limited" | "supported" | "corroborated";
   readonly published_at?: Timestamp;
   readonly retrieved_at: Timestamp;
   readonly freshness: "current" | "stale" | "superseded" | "unknown";
@@ -193,6 +201,13 @@ export interface SourceRecord {
   readonly kind: "regulator" | "issuer" | "exchange" | "news" | "user" | "unknown";
   readonly display_name: string;
   readonly identity_state: "verified" | "mismatched" | "unknown";
+  readonly source_class?: "primary" | "secondary" | "user_supplied" | "unknown";
+  readonly source_tier?:
+    | "blocked"
+    | "unverified"
+    | "attributed"
+    | "verified_secondary"
+    | "verified_primary";
   readonly canonical_origins: readonly string[];
   readonly created_at: Timestamp;
   readonly updated_at: Timestamp;
