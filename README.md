@@ -129,6 +129,9 @@ Verus is one layer in a defense-in-depth architecture. It does not replace
 exchange permissions, human approval, position limits, or an outbound execution
 firewall.
 
+The security objectives, trust boundaries, abuse cases, control mappings, and
+residual risks are maintained in the [Verus Threat Model](docs/security/threat-model.md).
+
 ## Product surfaces
 
 The production release is planned to provide:
