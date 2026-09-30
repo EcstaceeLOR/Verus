@@ -197,6 +197,10 @@ Start with the pinned [v1.0 production roadmap](https://github.com/EcstaceeLOR/V
 then use the [open milestones](https://github.com/EcstaceeLOR/Verus/milestones)
 for acceptance criteria, native dependencies, and current progress.
 
+The authoritative v1 scope, supported workflows, measurable requirements, and
+release gates are defined in the
+[Verus v1 Product Requirements and Release Contract](docs/product/requirements-v1.md).
+
 ## Contributing
 
 Verus is at the contract-first stage. Before opening a large implementation
