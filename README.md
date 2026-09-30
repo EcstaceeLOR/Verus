@@ -183,17 +183,19 @@ Verus v1.0 will not be declared generally available until it has:
 
 Development is organized as a dependency-ordered production backlog:
 
-1. product foundations and security contracts;
-2. secure ingestion and injection detection;
-3. evidence verification and signed Context Capsules;
-4. API, MCP, CLI, SDK, and portfolio integrations;
-5. operator and reviewer product experience;
-6. production hardening and operational readiness; and
-7. v1.0 release qualification.
+1. product and security contracts;
+2. platform foundation;
+3. secure ingestion;
+4. detection and policy engine;
+5. evidence intelligence and signed Context Capsules;
+6. agent, model, and Bitget integrations;
+7. operator console and review workflows;
+8. production security and operations; and
+9. v1.0 release qualification and General Availability.
 
-See the [open milestones](https://github.com/EcstaceeLOR/Verus/milestones) and
-[issue backlog](https://github.com/EcstaceeLOR/Verus/issues) for acceptance
-criteria, dependencies, and current progress.
+Start with the pinned [v1.0 production roadmap](https://github.com/EcstaceeLOR/Verus/issues/1),
+then use the [open milestones](https://github.com/EcstaceeLOR/Verus/milestones)
+for acceptance criteria, native dependencies, and current progress.
 
 ## Contributing
 
