@@ -144,7 +144,10 @@ Verus is being built around the following principles:
 
 The normative [threat model](docs/security/threat-model.md) and
 [policy and decision semantics](docs/security/policy-semantics.md) define these
-guarantees, precedence rules, failure behavior, and residual risks.
+guarantees, precedence rules, failure behavior, and residual risks. The
+[source, evidence, and data-classification rules](docs/security/source-evidence-data-classification.md)
+keep identity assurance separate from claim verification and govern sensitive
+data throughout its lifecycle.
 
 Verus is one layer in a defense-in-depth architecture. It does not replace
 exchange permissions, human approval, position limits, or an outbound execution

@@ -80,6 +80,18 @@ or introduce behavior that is required to interpret the safety decision. A
 feature that changes the security meaning of a capsule requires a versioned
 core-contract change.
 
+## Source and evidence fields
+
+`source_class` and `source_tier` describe provenance and identity assurance;
+`quality_grade` describes how well one evidence item supports a specific
+claim. They are independent. Verus producers emit these fields. Readers of
+older compatible payloads treat a missing value as unknown and must not infer a
+trusted default.
+
+The normative meanings, freshness behavior, and claim-verification rules are
+defined in
+[`source-evidence-data-classification.md`](../../docs/security/source-evidence-data-classification.md).
+
 ## Compatibility and evolution
 
 `schema_version` is explicit and currently fixed at `1.0`.
