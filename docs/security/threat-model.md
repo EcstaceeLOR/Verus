@@ -154,6 +154,10 @@ Text may contain direct or indirect instructions. Model-assisted components rece
 policy, signing, administrative, or general network tools. Their structured output is validated and
 treated as a signal, not authority.
 
+Detector coverage for instruction and content-manipulation threats is defined by the versioned
+[content-manipulation taxonomy](content-manipulation-taxonomy.md) and its synthetic corpus. The
+frozen corpus partition is reserved for evaluation and is not used for tuning.
+
 ### TB-05: evidence providers to connectors
 
 Authentic transport does not guarantee truthful data. Connectors preserve source identity,

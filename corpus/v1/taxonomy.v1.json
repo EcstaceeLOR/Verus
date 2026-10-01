@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0",
+  "taxonomy_version": "v1",
+  "published_on": "2026-10-01",
+  "categories": [
+    {
+      "id": "direct_instruction_override",
+      "threats": ["THR-ING-001"],
+      "default_disposition": "block",
+      "description": "Content attempting to override the receiving agent's instructions."
+    },
+    {
+      "id": "indirect_instruction_override",
+      "threats": ["THR-ING-001"],
+      "default_disposition": "review",
+      "description": "Instructions embedded in otherwise informational material."
+    },
+    {
+      "id": "tool_coercion",
+      "threats": ["THR-ING-001"],
+      "default_disposition": "block",
+      "description": "Content attempting to cause privileged tool use or execution."
+    },
+    {
+      "id": "encoded_payload",
+      "threats": ["THR-ING-002"],
+      "default_disposition": "review",
+      "description": "Encoded or fragmented content intended to evade inspection."
+    },
+    {
+      "id": "multilingual_instruction",
+      "threats": ["THR-ING-002"],
+      "default_disposition": "review",
+      "description": "Instructional content expressed in a language other than the surrounding text."
+    },
+    {
+      "id": "source_impersonation",
+      "threats": ["THR-ING-001"],
+      "default_disposition": "block",
+      "description": "Content falsely claiming trusted system or source authority."
+    },
+    {
+      "id": "hidden_content",
+      "threats": ["THR-ING-002"],
+      "default_disposition": "review",
+      "description": "Content concealed through markup, layout, or non-visible text."
+    },
+    {
+      "id": "benign_control",
+      "threats": [],
+      "default_disposition": "allow",
+      "description": "Normal financial information with no attempt to direct the receiving agent."
+    }
+  ]
+}
