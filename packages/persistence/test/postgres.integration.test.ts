@@ -63,10 +63,10 @@ describe("PostgreSQL persistence", () => {
         },
       },
     });
-    expect(fresh).toMatchObject({ fromVersion: 0, toVersion: 3, appliedVersions: [1, 2, 3] });
+    expect(fresh).toMatchObject({ fromVersion: 0, toVersion: 4, appliedVersions: [1, 2, 3, 4] });
 
     const existing = await migrate(adminPool);
-    expect(existing).toMatchObject({ fromVersion: 3, toVersion: 3, appliedVersions: [] });
+    expect(existing).toMatchObject({ fromVersion: 4, toVersion: 4, appliedVersions: [] });
 
     const tables = await adminPool.query<{ table_name: string }>(
       `SELECT table_name FROM information_schema.tables
@@ -74,9 +74,9 @@ describe("PostgreSQL persistence", () => {
          ('workspaces', 'scans', 'policies', 'findings', 'evidence_records',
           'jobs', 'key_metadata', 'audit_events', 'outbox_events', 'identities',
           'memberships', 'invitations', 'service_accounts', 'authorization_sessions',
-          'api_keys', 'secret_metadata')`,
+          'api_keys', 'secret_metadata', 'job_attempts', 'job_results')`,
     );
-    expect(tables.rows).toHaveLength(16);
+    expect(tables.rows).toHaveLength(18);
     const forced = await adminPool.query<{ relforcerowsecurity: boolean; relrowsecurity: boolean }>(
       `SELECT relrowsecurity, relforcerowsecurity FROM pg_class
        WHERE relname = 'scans'`,
@@ -112,8 +112,8 @@ describe("PostgreSQL persistence", () => {
       appliedVersions: [interruptedVersion],
     });
     await expect(
-      migrate(adminPool, { targetVersion: 3, migrations: [...base, repaired] }),
-    ).resolves.toMatchObject({ toVersion: 3, appliedVersions: [interruptedVersion] });
+      migrate(adminPool, { targetVersion: 4, migrations: [...base, repaired] }),
+    ).resolves.toMatchObject({ toVersion: 4, appliedVersions: [interruptedVersion] });
   });
 
   it("enforces tenant scope in both repositories and PostgreSQL RLS", async () => {
@@ -475,8 +475,8 @@ describe("PostgreSQL persistence", () => {
     await appPool.end();
     appPool = undefined;
     const down = await migrate(adminPool, { targetVersion: 0 });
-    expect(down).toMatchObject({ fromVersion: 3, toVersion: 0, appliedVersions: [3, 2, 1] });
+    expect(down).toMatchObject({ fromVersion: 4, toVersion: 0, appliedVersions: [4, 3, 2, 1] });
     const up = await migrate(adminPool);
-    expect(up).toMatchObject({ fromVersion: 0, toVersion: 3, appliedVersions: [1, 2, 3] });
+    expect(up).toMatchObject({ fromVersion: 0, toVersion: 4, appliedVersions: [1, 2, 3, 4] });
   });
 });
