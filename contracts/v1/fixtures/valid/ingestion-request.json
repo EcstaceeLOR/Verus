@@ -3,6 +3,11 @@
   "request_id": "req_01ARZ3NDEKTSV4RRFFQ69G5FAV",
   "workspace_id": "ws_01ARZ3NDEKTSV4RRFFQ69G5FAW",
   "submitted_at": "2026-10-01T09:30:00.000Z",
+  "idempotency_key": "ingestion-fixture-001",
+  "provenance": {
+    "source_class": "user_supplied",
+    "submitted_by": "fixture"
+  },
   "input": {
     "kind": "url",
     "url": "https://example.com/investor-relations/filing"

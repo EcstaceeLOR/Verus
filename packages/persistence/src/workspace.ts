@@ -16,6 +16,8 @@ export interface ScanRecord {
   readonly scanId: string;
   readonly requestId: string;
   readonly inputDigest: string;
+  readonly idempotencyKey: string;
+  readonly requestDigest: string;
   readonly state: ScanState;
   readonly stateVersion: number;
   readonly createdAt: Date;
@@ -47,6 +49,8 @@ export function canTransitionScan(from: ScanState, to: ScanState): boolean {
 interface ScanRow {
   created_at: Date;
   input_digest: string;
+  idempotency_key: string;
+  request_digest: string;
   request_id: string;
   scan_id: string;
   state: ScanState;
@@ -61,6 +65,8 @@ function toScan(row: ScanRow): Readonly<ScanRecord> {
     scanId: row.scan_id,
     requestId: row.request_id,
     inputDigest: row.input_digest,
+    idempotencyKey: row.idempotency_key,
+    requestDigest: row.request_digest,
     state: row.state,
     stateVersion: Number(row.state_version),
     createdAt: row.created_at,
@@ -114,20 +120,29 @@ export class WorkspacePersistence {
     readonly scanId: string;
     readonly requestId: string;
     readonly inputDigest: string;
+    readonly idempotencyKey: string;
+    readonly requestDigest: string;
   }): Promise<Readonly<ScanRecord>> {
     const result = await this.#client.query<ScanRow>(
-      `INSERT INTO scans (workspace_id, scan_id, request_id, input_digest)
-       VALUES ($1, $2, $3, $4)
-       RETURNING workspace_id, scan_id, request_id, input_digest, state, state_version,
+      `INSERT INTO scans (workspace_id, scan_id, request_id, input_digest, idempotency_key, request_digest)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING workspace_id, scan_id, request_id, input_digest, idempotency_key, request_digest, state, state_version,
                  created_at, updated_at`,
-      [this.#workspaceId, input.scanId, input.requestId, input.inputDigest],
+      [
+        this.#workspaceId,
+        input.scanId,
+        input.requestId,
+        input.inputDigest,
+        input.idempotencyKey,
+        input.requestDigest,
+      ],
     );
     return toScan(result.rows[0] as ScanRow);
   }
 
   async getScan(scanId: string): Promise<Readonly<ScanRecord>> {
     const result = await this.#client.query<ScanRow>(
-      `SELECT workspace_id, scan_id, request_id, input_digest, state, state_version,
+      `SELECT workspace_id, scan_id, request_id, input_digest, idempotency_key, request_digest, state, state_version,
               created_at, updated_at
        FROM scans WHERE workspace_id = $1 AND scan_id = $2`,
       [this.#workspaceId, scanId],
@@ -135,6 +150,48 @@ export class WorkspacePersistence {
     const row = result.rows[0];
     if (row === undefined) throw new VerusError("NOT_FOUND", "Scan does not exist.");
     return toScan(row);
+  }
+
+  async getScanByIdempotencyKey(idempotencyKey: string): Promise<Readonly<ScanRecord> | undefined> {
+    const result = await this.#client.query<ScanRow>(
+      `SELECT workspace_id, scan_id, request_id, input_digest, idempotency_key, request_digest,
+              state, state_version, created_at, updated_at
+       FROM scans WHERE workspace_id = $1 AND idempotency_key = $2`,
+      [this.#workspaceId, idempotencyKey],
+    );
+    const row = result.rows[0];
+    return row === undefined ? undefined : toScan(row);
+  }
+
+  async createIngestionEnvelope(input: {
+    readonly envelopeId: string;
+    readonly scanId: string;
+    readonly requestId: string;
+    readonly requestDigest: string;
+    readonly inputDigest: string;
+    readonly inputKind: "feed_event" | "text" | "upload" | "url";
+    readonly mediaType?: string;
+    readonly provenance: Readonly<Record<string, unknown>>;
+    readonly envelope: Readonly<Record<string, unknown>>;
+  }): Promise<void> {
+    await this.#client.query(
+      `INSERT INTO ingestion_envelopes
+         (workspace_id, envelope_id, scan_id, request_id, request_digest, input_digest,
+          input_kind, media_type, provenance, envelope)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        this.#workspaceId,
+        input.envelopeId,
+        input.scanId,
+        input.requestId,
+        input.requestDigest,
+        input.inputDigest,
+        input.inputKind,
+        input.mediaType ?? null,
+        input.provenance,
+        input.envelope,
+      ],
+    );
   }
 
   async transitionScan(input: {
@@ -156,7 +213,7 @@ export class WorkspacePersistence {
            updated_at = clock_timestamp(),
            completed_at = CASE WHEN $6 THEN clock_timestamp() ELSE NULL END
        WHERE workspace_id = $1 AND scan_id = $2 AND state_version = $3 AND state = $7
-       RETURNING workspace_id, scan_id, request_id, input_digest, state, state_version,
+       RETURNING workspace_id, scan_id, request_id, input_digest, idempotency_key, request_digest, state, state_version,
                  created_at, updated_at`,
       [
         this.#workspaceId,

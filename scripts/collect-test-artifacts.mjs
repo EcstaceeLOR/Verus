@@ -12,6 +12,7 @@ const projects = Object.freeze([
   ["crypto", "packages/crypto"],
   ["domain", "packages/domain"],
   ["jobs", "packages/jobs"],
+  ["ingestion", "packages/ingestion"],
   ["observability", "packages/observability"],
   ["persistence", "packages/persistence"],
   ["testkit", "packages/testkit"],

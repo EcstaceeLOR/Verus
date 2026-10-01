@@ -323,6 +323,8 @@
         "request_id",
         "workspace_id",
         "submitted_at",
+        "idempotency_key",
+        "provenance",
         "input",
         "extensions"
       ],
@@ -331,6 +333,20 @@
         "request_id": { "$ref": "#/$defs/identifier" },
         "workspace_id": { "$ref": "#/$defs/identifier" },
         "submitted_at": { "$ref": "#/$defs/timestamp" },
+        "idempotency_key": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{7,127}$"
+        },
+        "provenance": {
+          "type": "object",
+          "required": ["source_class", "submitted_by"],
+          "properties": {
+            "source_class": { "enum": ["primary", "secondary", "user_supplied", "unknown"] },
+            "submitted_by": { "type": "string", "minLength": 1, "maxLength": 128 },
+            "asserted_origin": { "type": "string", "pattern": "^https://", "maxLength": 2048 }
+          },
+          "additionalProperties": false
+        },
         "input": {
           "oneOf": [
             {

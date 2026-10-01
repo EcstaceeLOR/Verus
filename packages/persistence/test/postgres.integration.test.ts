@@ -63,10 +63,14 @@ describe("PostgreSQL persistence", () => {
         },
       },
     });
-    expect(fresh).toMatchObject({ fromVersion: 0, toVersion: 5, appliedVersions: [1, 2, 3, 4, 5] });
+    expect(fresh).toMatchObject({
+      fromVersion: 0,
+      toVersion: 6,
+      appliedVersions: [1, 2, 3, 4, 5, 6],
+    });
 
     const existing = await migrate(adminPool);
-    expect(existing).toMatchObject({ fromVersion: 5, toVersion: 5, appliedVersions: [] });
+    expect(existing).toMatchObject({ fromVersion: 6, toVersion: 6, appliedVersions: [] });
 
     const tables = await adminPool.query<{ table_name: string }>(
       `SELECT table_name FROM information_schema.tables
@@ -74,9 +78,9 @@ describe("PostgreSQL persistence", () => {
          ('workspaces', 'scans', 'policies', 'findings', 'evidence_records',
           'jobs', 'key_metadata', 'audit_events', 'outbox_events', 'identities',
           'memberships', 'invitations', 'service_accounts', 'authorization_sessions',
-          'api_keys', 'secret_metadata', 'job_attempts', 'job_results')`,
+          'api_keys', 'secret_metadata', 'job_attempts', 'job_results', 'ingestion_envelopes')`,
     );
-    expect(tables.rows).toHaveLength(18);
+    expect(tables.rows).toHaveLength(19);
     const forced = await adminPool.query<{ relforcerowsecurity: boolean; relrowsecurity: boolean }>(
       `SELECT relrowsecurity, relforcerowsecurity FROM pg_class
        WHERE relname = 'scans'`,
@@ -112,8 +116,8 @@ describe("PostgreSQL persistence", () => {
       appliedVersions: [interruptedVersion],
     });
     await expect(
-      migrate(adminPool, { targetVersion: 5, migrations: [...base, repaired] }),
-    ).resolves.toMatchObject({ toVersion: 5, appliedVersions: [interruptedVersion] });
+      migrate(adminPool, { targetVersion: 6, migrations: [...base, repaired] }),
+    ).resolves.toMatchObject({ toVersion: 6, appliedVersions: [interruptedVersion] });
   });
 
   it("enforces tenant scope in both repositories and PostgreSQL RLS", async () => {
@@ -155,6 +159,8 @@ describe("PostgreSQL persistence", () => {
         scanId,
         requestId: "req_01ARZ3NDEKTSV4RRFFQ69G5FAZ",
         inputDigest: `sha256:${"0".repeat(64)}`,
+        idempotencyKey: "persistence-scan-001",
+        requestDigest: `sha256:${"1".repeat(64)}`,
       }),
     );
     await withWorkspaceTransaction(appPool, workspaceA, (store) =>
@@ -475,8 +481,12 @@ describe("PostgreSQL persistence", () => {
     await appPool.end();
     appPool = undefined;
     const down = await migrate(adminPool, { targetVersion: 0 });
-    expect(down).toMatchObject({ fromVersion: 5, toVersion: 0, appliedVersions: [5, 4, 3, 2, 1] });
+    expect(down).toMatchObject({
+      fromVersion: 6,
+      toVersion: 0,
+      appliedVersions: [6, 5, 4, 3, 2, 1],
+    });
     const up = await migrate(adminPool);
-    expect(up).toMatchObject({ fromVersion: 0, toVersion: 5, appliedVersions: [1, 2, 3, 4, 5] });
+    expect(up).toMatchObject({ fromVersion: 0, toVersion: 6, appliedVersions: [1, 2, 3, 4, 5, 6] });
   });
 });
