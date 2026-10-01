@@ -571,7 +571,7 @@ export class PostgresJobQueue {
            (workspace_id, event_id, actor_type, actor_id, action, target_type, target_id,
             new_state, occurred_at)
          VALUES ($1, $2, $3, $4, 'job.dead_letter_replayed', 'job', $5,
-                 jsonb_build_object('replayed_from_job_id', $6), $7)`,
+                 jsonb_build_object('replayed_from_job_id', $6::text), $7)`,
           [
             input.workspaceId,
             input.auditEventId,
