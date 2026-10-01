@@ -11,6 +11,9 @@
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
+  "dependencies": {
+    "@verus/observability": "workspace:^"
+  },
   "devDependencies": {
     "@types/node": "catalog:",
     "tsx": "catalog:",

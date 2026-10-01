@@ -19,12 +19,14 @@
     "infra:up": "docker compose --env-file .env.example -f deploy/compose/compose.yml up -d --wait",
     "lint": "eslint eslint.config.mjs scripts .github/*.mjs docs/**/*.mjs contracts/**/*.mjs && markdownlint-cli2 \"**/*.md\" && node scripts/run-turbo.mjs run lint",
     "test": "node scripts/run-turbo.mjs run test",
+    "test:artifacts": "node scripts/collect-test-artifacts.mjs",
     "typecheck": "node scripts/run-turbo.mjs run typecheck",
     "verify": "node scripts/verify-workspace.mjs && node .github/verify-governance.mjs && node docs/architecture/verify-dependencies.mjs && node docs/security/verify-data-handling.mjs && node contracts/v1/verify-canonicalization.mjs && node contracts/v1/verify-policy-vectors.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/node": "26.6.3",
+    "@vitest/coverage-v8": "5.0.3",
     "eslint": "10.11.0",
     "globals": "17.12.0",
     "markdownlint-cli2": "0.23.3",

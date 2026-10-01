@@ -39,4 +39,15 @@ if (!issueConfig.includes("/security/advisories/new")) {
   throw new Error("Issue chooser has no private vulnerability route");
 }
 
+const branchProtection = JSON.parse(
+  await readFile(resolve(here, "branch-protection.json"), "utf8"),
+);
+const requiredChecks = branchProtection.required_status_checks?.contexts ?? [];
+for (const check of ["quality", "security", "postgres"]) {
+  if (!requiredChecks.includes(check)) throw new Error(`Branch protection misses ${check}`);
+}
+if (branchProtection.required_status_checks?.strict !== true) {
+  throw new Error("Branch protection must require an up-to-date branch");
+}
+
 console.log(`Verified ${policy.required_files.length} governance files and policies.`);

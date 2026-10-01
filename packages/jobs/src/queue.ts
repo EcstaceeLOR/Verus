@@ -17,6 +17,7 @@ const DIGEST_PATTERN = /^sha256:[0-9a-f]{64}$/;
 export interface ClaimedJob {
   readonly workspaceId: string;
   readonly jobId: string;
+  readonly correlationId: string;
   readonly queue: string;
   readonly kind: string;
   readonly envelopeVersion: number;
@@ -49,6 +50,7 @@ export interface DeadLetter {
 interface JobRow {
   attempt: number;
   cancel_requested_at: Date | null;
+  correlation_id: string;
   deadline_at: Date;
   effect_key: string;
   envelope_version: number;
@@ -117,6 +119,7 @@ export class PostgresJobQueue {
   async enqueue(input: {
     readonly workspaceId: string;
     readonly jobId: string;
+    readonly correlationId: string;
     readonly queue: string;
     readonly kind: string;
     readonly envelopeVersion: number;
@@ -133,14 +136,15 @@ export class PostgresJobQueue {
       this.#transaction(input.workspaceId, async (client) => {
         const inserted = await client.query<{ job_id: string }>(
           `INSERT INTO jobs
-             (workspace_id, job_id, queue_name, kind, envelope_version, payload_ref,
+             (workspace_id, job_id, correlation_id, queue_name, kind, envelope_version, payload_ref,
               idempotency_key, effect_key, max_attempts, timeout_ms, deadline_at, available_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
            ON CONFLICT (workspace_id, kind, idempotency_key) DO NOTHING
            RETURNING job_id`,
           [
             input.workspaceId,
             input.jobId,
+            input.correlationId,
             input.queue,
             input.kind,
             input.envelopeVersion,
@@ -164,6 +168,7 @@ export class PostgresJobQueue {
         if (
           row === undefined ||
           row.queue_name !== input.queue ||
+          row.correlation_id !== input.correlationId ||
           row.envelope_version !== input.envelopeVersion ||
           row.payload_ref !== input.payloadRef ||
           row.effect_key !== input.effectKey
@@ -247,6 +252,7 @@ export class PostgresJobQueue {
         return Object.freeze({
           workspaceId: input.workspaceId,
           jobId: row.job_id,
+          correlationId: row.correlation_id,
           queue: row.queue_name,
           kind: row.kind,
           envelopeVersion: row.envelope_version,
@@ -325,14 +331,15 @@ export class PostgresJobQueue {
         this.#assertLease(row, input.leaseToken, now);
         const committed = await client.query<{ result_ref: string; result_digest: string }>(
           `INSERT INTO job_results
-             (workspace_id, effect_key, job_id, result_ref, result_digest, committed_at)
-           VALUES ($1, $2, $3, $4, $5, $6)
+             (workspace_id, effect_key, job_id, correlation_id, result_ref, result_digest, committed_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
            ON CONFLICT (workspace_id, effect_key) DO NOTHING
            RETURNING result_ref, result_digest`,
           [
             input.workspaceId,
             row.effect_key,
             input.jobId,
+            row.correlation_id,
             input.resultRef,
             input.resultDigest,
             now,
@@ -517,6 +524,7 @@ export class PostgresJobQueue {
     readonly actorType: "service" | "system" | "user";
     readonly actorId: string;
     readonly auditEventId: string;
+    readonly correlationId: string;
     readonly now?: Date;
   }): Promise<void> {
     assertMatch(input.workspaceId, WORKSPACE_PATTERN, "workspace ID");
@@ -525,6 +533,7 @@ export class PostgresJobQueue {
     assertMatch(input.idempotencyKey, KEY_PATTERN, "idempotency key");
     assertMatch(input.actorId, WORKER_PATTERN, "actor ID");
     assertMatch(input.auditEventId, KEY_PATTERN, "audit event ID");
+    assertMatch(input.correlationId, /^[A-Za-z0-9_-]{8,128}$/, "correlation ID");
     if (Number.isNaN(input.deadlineAt.getTime())) {
       throw new JobQueueError("JOB_INVALID_INPUT", "Invalid replay deadline.");
     }
@@ -546,13 +555,14 @@ export class PostgresJobQueue {
         }
         await client.query(
           `INSERT INTO jobs
-           (workspace_id, job_id, queue_name, kind, envelope_version, payload_ref,
+           (workspace_id, job_id, correlation_id, queue_name, kind, envelope_version, payload_ref,
             idempotency_key, effect_key, max_attempts, timeout_ms, deadline_at,
             available_at, replayed_from_job_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
           [
             input.workspaceId,
             input.newJobId,
+            input.correlationId,
             row.queue_name,
             row.kind,
             row.envelope_version,
@@ -569,9 +579,9 @@ export class PostgresJobQueue {
         await client.query(
           `INSERT INTO audit_events
            (workspace_id, event_id, actor_type, actor_id, action, target_type, target_id,
-            new_state, occurred_at)
+            new_state, occurred_at, correlation_id)
          VALUES ($1, $2, $3, $4, 'job.dead_letter_replayed', 'job', $5,
-                 jsonb_build_object('replayed_from_job_id', $6::text), $7)`,
+                 jsonb_build_object('replayed_from_job_id', $6::text), $7, $8)`,
           [
             input.workspaceId,
             input.auditEventId,
@@ -580,6 +590,7 @@ export class PostgresJobQueue {
             input.newJobId,
             input.deadJobId,
             now,
+            input.correlationId,
           ],
         );
       }),
@@ -725,6 +736,7 @@ export class PostgresJobQueue {
   #validateEnvelope(input: {
     readonly workspaceId: string;
     readonly jobId: string;
+    readonly correlationId: string;
     readonly queue: string;
     readonly kind: string;
     readonly envelopeVersion: number;
@@ -738,6 +750,7 @@ export class PostgresJobQueue {
   }): void {
     assertMatch(input.workspaceId, WORKSPACE_PATTERN, "workspace ID");
     assertMatch(input.jobId, JOB_ID_PATTERN, "job ID");
+    assertMatch(input.correlationId, /^[A-Za-z0-9_-]{8,128}$/, "correlation ID");
     assertMatch(input.queue, NAME_PATTERN, "queue name");
     assertMatch(input.kind, NAME_PATTERN, "job kind");
     assertMatch(input.payloadRef, OBJECT_REF_PATTERN, "payload reference");

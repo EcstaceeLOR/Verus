@@ -63,10 +63,10 @@ describe("PostgreSQL persistence", () => {
         },
       },
     });
-    expect(fresh).toMatchObject({ fromVersion: 0, toVersion: 4, appliedVersions: [1, 2, 3, 4] });
+    expect(fresh).toMatchObject({ fromVersion: 0, toVersion: 5, appliedVersions: [1, 2, 3, 4, 5] });
 
     const existing = await migrate(adminPool);
-    expect(existing).toMatchObject({ fromVersion: 4, toVersion: 4, appliedVersions: [] });
+    expect(existing).toMatchObject({ fromVersion: 5, toVersion: 5, appliedVersions: [] });
 
     const tables = await adminPool.query<{ table_name: string }>(
       `SELECT table_name FROM information_schema.tables
@@ -112,8 +112,8 @@ describe("PostgreSQL persistence", () => {
       appliedVersions: [interruptedVersion],
     });
     await expect(
-      migrate(adminPool, { targetVersion: 4, migrations: [...base, repaired] }),
-    ).resolves.toMatchObject({ toVersion: 4, appliedVersions: [interruptedVersion] });
+      migrate(adminPool, { targetVersion: 5, migrations: [...base, repaired] }),
+    ).resolves.toMatchObject({ toVersion: 5, appliedVersions: [interruptedVersion] });
   });
 
   it("enforces tenant scope in both repositories and PostgreSQL RLS", async () => {
@@ -475,8 +475,8 @@ describe("PostgreSQL persistence", () => {
     await appPool.end();
     appPool = undefined;
     const down = await migrate(adminPool, { targetVersion: 0 });
-    expect(down).toMatchObject({ fromVersion: 4, toVersion: 0, appliedVersions: [4, 3, 2, 1] });
+    expect(down).toMatchObject({ fromVersion: 5, toVersion: 0, appliedVersions: [5, 4, 3, 2, 1] });
     const up = await migrate(adminPool);
-    expect(up).toMatchObject({ fromVersion: 0, toVersion: 4, appliedVersions: [1, 2, 3, 4] });
+    expect(up).toMatchObject({ fromVersion: 0, toVersion: 5, appliedVersions: [1, 2, 3, 4, 5] });
   });
 });

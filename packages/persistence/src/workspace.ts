@@ -261,6 +261,7 @@ export class WorkspacePersistence {
 
   async enqueueJob(input: {
     readonly jobId: string;
+    readonly correlationId: string;
     readonly queue: string;
     readonly kind: string;
     readonly envelopeVersion: number;
@@ -274,13 +275,14 @@ export class WorkspacePersistence {
   }): Promise<boolean> {
     const result = await this.#client.query(
       `INSERT INTO jobs
-         (workspace_id, job_id, queue_name, kind, envelope_version, payload_ref,
+         (workspace_id, job_id, correlation_id, queue_name, kind, envelope_version, payload_ref,
           idempotency_key, effect_key, max_attempts, timeout_ms, deadline_at, available_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        ON CONFLICT (workspace_id, kind, idempotency_key) DO NOTHING`,
       [
         this.#workspaceId,
         input.jobId,
+        input.correlationId,
         input.queue,
         input.kind,
         input.envelopeVersion,
