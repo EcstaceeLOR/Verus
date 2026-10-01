@@ -164,7 +164,7 @@ export function ruleSetDigest(ruleSet: DetectorRuleSet): string {
 
 export class DeterministicRuleEngine {
   readonly #ruleSet: Readonly<DetectorRuleSet>;
-  readonly #telemetry?: DetectionTelemetry;
+  readonly #telemetry: DetectionTelemetry | undefined;
   constructor(ruleSet: DetectorRuleSet, telemetry?: DetectionTelemetry) {
     this.#ruleSet = validateRuleSet(ruleSet);
     this.#telemetry = telemetry;
