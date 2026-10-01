@@ -2,5 +2,23 @@
   "name": "@verus/retriever",
   "version": "0.0.0",
   "private": true,
-  "description": "Network-quarantined Verus retrieval service."
+  "description": "Network-quarantined Verus retrieval service.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint src test",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
 }

@@ -15,6 +15,7 @@ const projects = Object.freeze([
   ["ingestion", "packages/ingestion"],
   ["observability", "packages/observability"],
   ["persistence", "packages/persistence"],
+  ["retriever", "services/retriever"],
   ["testkit", "packages/testkit"],
   ["worker", "apps/worker"],
 ]);
