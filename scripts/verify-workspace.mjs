@@ -73,4 +73,12 @@ for (const workspaceRoot of ["apps", "packages", "services"]) {
 }
 
 await access(resolve(root, "pnpm-lock.yaml"));
+const canonicalTypes = await readFile(resolve(root, "contracts", "v1", "types.ts"), "utf8");
+const packagedTypes = await readFile(
+  resolve(root, "packages", "contracts", "src", "types.ts"),
+  "utf8",
+);
+if (canonicalTypes !== packagedTypes) {
+  throw new Error("@verus/contracts types must match contracts/v1/types.ts exactly");
+}
 console.log(`Verified Node ${nodeVersion}, pnpm 12.8.1, and ${seen.size} workspace packages.`);
