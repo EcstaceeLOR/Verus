@@ -17,3 +17,8 @@ bytes and a declared MIME type. PDF text retains page and approximate bounding-b
 text retains its archive part and character range. Incomplete extraction is never a success. OCR is
 an explicit `OcrEngine` path in `extractDocument`, and every OCR result is marked `ocrDerived`;
 production OCR adapters must run in their own equivalent bounded worker.
+
+`createCanonicalizer` is the text-safety boundary before detectors and policy. It applies the
+documented NFKC/control/confusable policy and returns canonical text, independent raw and canonical
+digests, source transformation maps, and findings for zero-width, bidi, control, homoglyph, hidden
+CSS, metadata, and visual/text discrepancies.
