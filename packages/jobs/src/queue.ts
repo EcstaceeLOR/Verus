@@ -661,7 +661,10 @@ export class PostgresJobQueue {
       `UPDATE jobs
        SET state = $3, available_at = COALESCE($4, available_at),
            last_error_code = $5, last_error_retryable = $6,
-           completed_at = CASE WHEN $3 IN ('cancelled', 'dead_lettered') THEN $7 ELSE NULL END,
+           completed_at = CASE
+             WHEN $3::text IN ('cancelled', 'dead_lettered') THEN $7::timestamptz
+             ELSE NULL::timestamptz
+           END,
            lease_owner = NULL, lease_token = NULL, lease_expires_at = NULL,
            execution_expires_at = NULL, updated_at = $7
        WHERE workspace_id = $1 AND job_id = $2`,
