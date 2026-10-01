@@ -63,19 +63,20 @@ describe("PostgreSQL persistence", () => {
         },
       },
     });
-    expect(fresh).toMatchObject({ fromVersion: 0, toVersion: 2, appliedVersions: [1, 2] });
+    expect(fresh).toMatchObject({ fromVersion: 0, toVersion: 3, appliedVersions: [1, 2, 3] });
 
     const existing = await migrate(adminPool);
-    expect(existing).toMatchObject({ fromVersion: 2, toVersion: 2, appliedVersions: [] });
+    expect(existing).toMatchObject({ fromVersion: 3, toVersion: 3, appliedVersions: [] });
 
     const tables = await adminPool.query<{ table_name: string }>(
       `SELECT table_name FROM information_schema.tables
        WHERE table_schema = 'public' AND table_name IN
          ('workspaces', 'scans', 'policies', 'findings', 'evidence_records',
           'jobs', 'key_metadata', 'audit_events', 'outbox_events', 'identities',
-          'memberships', 'invitations', 'service_accounts', 'authorization_sessions')`,
+          'memberships', 'invitations', 'service_accounts', 'authorization_sessions',
+          'api_keys', 'secret_metadata')`,
     );
-    expect(tables.rows).toHaveLength(14);
+    expect(tables.rows).toHaveLength(16);
     const forced = await adminPool.query<{ relforcerowsecurity: boolean; relrowsecurity: boolean }>(
       `SELECT relrowsecurity, relforcerowsecurity FROM pg_class
        WHERE relname = 'scans'`,
@@ -111,8 +112,8 @@ describe("PostgreSQL persistence", () => {
       appliedVersions: [interruptedVersion],
     });
     await expect(
-      migrate(adminPool, { targetVersion: 2, migrations: [...base, repaired] }),
-    ).resolves.toMatchObject({ toVersion: 2, appliedVersions: [interruptedVersion] });
+      migrate(adminPool, { targetVersion: 3, migrations: [...base, repaired] }),
+    ).resolves.toMatchObject({ toVersion: 3, appliedVersions: [interruptedVersion] });
   });
 
   it("enforces tenant scope in both repositories and PostgreSQL RLS", async () => {
@@ -348,13 +349,134 @@ describe("PostgreSQL persistence", () => {
     expect(audited.rows[0]?.count).toBe("5");
   });
 
+  it("rotates and revokes API keys, provider secrets, and signing keys without downtime", async () => {
+    if (appPool === undefined) throw new Error("Application pool was not initialized.");
+    const ownerSessionId = "session_01ARZ3NDEKTSV4RRFFQ69G5FB3";
+    const serviceAccountId = "svc_01ARZ3NDEKTSV4RRFFQ69G5FBH";
+    const now = new Date();
+    const signUntil = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const verifyUntil = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+    const event = (suffix: string): string => `credential-event-${suffix}`;
+
+    await withWorkspaceTransaction(appPool, workspaceA, async (store) => {
+      await store.identity().createServiceAccount({
+        actorSessionId: ownerSessionId,
+        serviceAccountId,
+        displayName: "Read-only integration",
+        role: "integration_client",
+        auditEventId: event("service"),
+        occurredAt: now,
+      });
+      const credentials = store.credentials();
+      await credentials.registerApiKey({
+        actorSessionId: ownerSessionId,
+        keyId: "key_01ARZ3NDEKTSV4RRFFQ69G5FBJ",
+        serviceAccountId,
+        prefix: "vrk.key_old_visible",
+        verifier: `hmac-sha256:${"1".repeat(64)}`,
+        verifierVersion: 1,
+        scopes: ["scan.create", "scan.read"],
+        auditEventId: event("api-old"),
+        occurredAt: now,
+      });
+      await credentials.registerApiKey({
+        actorSessionId: ownerSessionId,
+        keyId: "key_01ARZ3NDEKTSV4RRFFQ69G5FBK",
+        serviceAccountId,
+        prefix: "vrk.key_new_visible",
+        verifier: `hmac-sha256:${"2".repeat(64)}`,
+        verifierVersion: 1,
+        scopes: ["scan.create", "scan.read"],
+        rotatedFromKeyId: "key_01ARZ3NDEKTSV4RRFFQ69G5FBJ",
+        auditEventId: event("api-new"),
+        occurredAt: now,
+      });
+      expect(await credentials.findUsableApiKey("key_01ARZ3NDEKTSV4RRFFQ69G5FBJ")).toMatchObject({
+        status: "retiring",
+      });
+      expect(await credentials.findUsableApiKey("key_01ARZ3NDEKTSV4RRFFQ69G5FBK")).toMatchObject({
+        status: "active",
+      });
+      await credentials.revokeApiKey({
+        actorSessionId: ownerSessionId,
+        keyId: "key_01ARZ3NDEKTSV4RRFFQ69G5FBJ",
+        auditEventId: event("api-revoke"),
+        occurredAt: now,
+      });
+      expect(await credentials.findUsableApiKey("key_01ARZ3NDEKTSV4RRFFQ69G5FBJ")).toBeUndefined();
+
+      await credentials.registerSecretMetadata({
+        actorSessionId: ownerSessionId,
+        secretId: "secret_01ARZ3NDEKTSV4RRFFQ69G5FBM",
+        purpose: "model.provider",
+        providerReference: "model/primary-v1",
+        version: 1,
+        auditEventId: event("secret-old"),
+        occurredAt: now,
+      });
+      await credentials.registerSecretMetadata({
+        actorSessionId: ownerSessionId,
+        secretId: "secret_01ARZ3NDEKTSV4RRFFQ69G5FBN",
+        purpose: "model.provider",
+        providerReference: "model/primary-v2",
+        version: 2,
+        previousSecretId: "secret_01ARZ3NDEKTSV4RRFFQ69G5FBM",
+        auditEventId: event("secret-new"),
+        occurredAt: now,
+      });
+      await credentials.revokeSecretMetadata({
+        actorSessionId: ownerSessionId,
+        secretId: "secret_01ARZ3NDEKTSV4RRFFQ69G5FBM",
+        destroyed: true,
+        auditEventId: event("secret-destroy"),
+        occurredAt: now,
+      });
+
+      await credentials.rotateSigningKey({
+        actorSessionId: ownerSessionId,
+        keyId: "key_01ARZ3NDEKTSV4RRFFQ69G5FBP",
+        providerReference: "signing/capsule-v1",
+        publicKey: "A".repeat(59),
+        notBefore: new Date(now.getTime() - 60 * 60 * 1000),
+        signUntil,
+        verifyUntil,
+        auditEventId: event("sign-old"),
+        occurredAt: now,
+      });
+      await credentials.rotateSigningKey({
+        actorSessionId: ownerSessionId,
+        keyId: "key_01ARZ3NDEKTSV4RRFFQ69G5FBQ",
+        providerReference: "signing/capsule-v2",
+        publicKey: "B".repeat(59),
+        notBefore: now,
+        signUntil,
+        verifyUntil,
+        previousKeyId: "key_01ARZ3NDEKTSV4RRFFQ69G5FBP",
+        auditEventId: event("sign-new"),
+        occurredAt: now,
+      });
+      expect(await credentials.discoverSigningKeys(now)).toHaveLength(2);
+      await credentials.revokeSigningKey({
+        actorSessionId: ownerSessionId,
+        keyId: "key_01ARZ3NDEKTSV4RRFFQ69G5FBQ",
+        auditEventId: event("sign-revoke"),
+        occurredAt: now,
+      });
+      expect(await credentials.discoverSigningKeys(now)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ keyId: "key_01ARZ3NDEKTSV4RRFFQ69G5FBQ", status: "revoked" }),
+        ]),
+      );
+    });
+  });
+
   it("supports a full rollback and clean re-application", async () => {
     if (appPool === undefined) throw new Error("Application pool was not initialized.");
     await appPool.end();
     appPool = undefined;
     const down = await migrate(adminPool, { targetVersion: 0 });
-    expect(down).toMatchObject({ fromVersion: 2, toVersion: 0, appliedVersions: [2, 1] });
+    expect(down).toMatchObject({ fromVersion: 3, toVersion: 0, appliedVersions: [3, 2, 1] });
     const up = await migrate(adminPool);
-    expect(up).toMatchObject({ fromVersion: 0, toVersion: 2, appliedVersions: [1, 2] });
+    expect(up).toMatchObject({ fromVersion: 0, toVersion: 3, appliedVersions: [1, 2, 3] });
   });
 });

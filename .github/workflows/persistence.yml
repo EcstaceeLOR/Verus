@@ -6,6 +6,7 @@ on:
       - ".github/workflows/persistence.yml"
       - "packages/persistence/**"
       - "packages/contracts/**"
+      - "packages/crypto/**"
       - "packages/domain/**"
       - "pnpm-lock.yaml"
   push:
@@ -14,6 +15,7 @@ on:
       - ".github/workflows/persistence.yml"
       - "packages/persistence/**"
       - "packages/contracts/**"
+      - "packages/crypto/**"
       - "packages/domain/**"
       - "pnpm-lock.yaml"
 
@@ -49,5 +51,7 @@ jobs:
           node-version-file: .node-version
       - run: corepack enable
       - run: corepack pnpm install --frozen-lockfile
+      - run: corepack pnpm --filter @verus/crypto... build
+      - run: corepack pnpm --filter @verus/crypto test
       - run: corepack pnpm --filter @verus/persistence... build
       - run: corepack pnpm --filter @verus/persistence test:integration
