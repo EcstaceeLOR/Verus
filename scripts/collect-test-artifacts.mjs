@@ -16,6 +16,7 @@ const projects = Object.freeze([
   ["observability", "packages/observability"],
   ["persistence", "packages/persistence"],
   ["quarantine", "packages/quarantine"],
+  ["parser", "services/parser"],
   ["retriever", "services/retriever"],
   ["testkit", "packages/testkit"],
   ["worker", "apps/worker"],

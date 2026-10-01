@@ -2,5 +2,27 @@
   "name": "@verus/parser",
   "version": "0.0.0",
   "private": true,
-  "description": "Resource-isolated Verus parser service."
+  "description": "Resource-isolated Verus parser service.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint src test",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@verus/observability": "workspace:*",
+    "parse5": "7.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
 }
