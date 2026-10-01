@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "corpus_version": "v1",
+  "license": "Apache-2.0",
+  "provenance": "All samples are author-created synthetic text. No third-party, customer, exchange, or scraped source content is included.",
+  "partition_policy": {
+    "train": "Detector development only.",
+    "calibration": "Threshold selection only.",
+    "frozen_test": "Evaluation only. This partition MUST NOT be read by detector training or calibration jobs."
+  },
+  "required_categories": [
+    "direct_instruction_override",
+    "indirect_instruction_override",
+    "tool_coercion",
+    "encoded_payload",
+    "multilingual_instruction",
+    "source_impersonation",
+    "hidden_content",
+    "benign_control"
+  ],
+  "required_threats": ["THR-ING-001", "THR-ING-002"]
+}

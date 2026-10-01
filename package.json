@@ -21,7 +21,7 @@
     "test": "node scripts/run-turbo.mjs run test",
     "test:artifacts": "node scripts/collect-test-artifacts.mjs",
     "typecheck": "node scripts/run-turbo.mjs run typecheck",
-    "verify": "node scripts/verify-workspace.mjs && node .github/verify-governance.mjs && node docs/architecture/verify-dependencies.mjs && node docs/security/verify-data-handling.mjs && node contracts/v1/verify-canonicalization.mjs && node contracts/v1/verify-policy-vectors.mjs"
+    "verify": "node scripts/verify-workspace.mjs && node .github/verify-governance.mjs && node docs/architecture/verify-dependencies.mjs && node docs/security/verify-data-handling.mjs && node contracts/v1/verify-canonicalization.mjs && node contracts/v1/verify-policy-vectors.mjs && node corpus/v1/verify-corpus.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
