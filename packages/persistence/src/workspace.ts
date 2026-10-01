@@ -194,6 +194,37 @@ export class WorkspacePersistence {
     );
   }
 
+  async createQuarantineUpload(input: {
+    readonly uploadId: string;
+    readonly objectRef: string;
+    readonly digest: string;
+    readonly declaredMediaType: string;
+    readonly detectedMediaType?: string;
+    readonly sizeBytes: number;
+    readonly state: "clean" | "malicious" | "rejected" | "scan_unavailable";
+    readonly failureCode?: string;
+    readonly retentionUntil: Date;
+  }): Promise<void> {
+    await this.#client.query(
+      `INSERT INTO quarantine_uploads
+         (workspace_id, upload_id, object_ref, digest, declared_media_type, detected_media_type,
+          size_bytes, state, failure_code, retention_until)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        this.#workspaceId,
+        input.uploadId,
+        input.objectRef,
+        input.digest,
+        input.declaredMediaType,
+        input.detectedMediaType ?? null,
+        input.sizeBytes,
+        input.state,
+        input.state === "clean" ? null : (input.failureCode ?? input.state.toUpperCase()),
+        input.retentionUntil,
+      ],
+    );
+  }
+
   async transitionScan(input: {
     readonly scanId: string;
     readonly expectedVersion: number;
