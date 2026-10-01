@@ -12,3 +12,10 @@ tree parser, and malformed markup is tolerated deterministically.
 Keep raw and normalized representations in separate object keys and retain their SHA-256 digests
 with the evidence record. On `INPUT_LIMIT`, `UNSUPPORTED_ENCODING`, or an unexpected parser error,
 record a failed parse job and do not make the source eligible for context assembly.
+
+For PDFs, DOCX, XLSX, and PPTX, call `createIsolatedDocumentParser`, not the low-level extractor. It
+creates a new memory-capped worker per document, applies a 25 MiB input limit, a 50 MiB expanded
+Office limit, 2,000 ZIP-entry limit, 250-page PDF limit, and 20-second deadline. A timeout, worker
+failure, malformed file, or page extraction failure yields an incomplete result. Workers must not
+publish any text from incomplete results. OCR is opt-in and OCR-derived text must remain labeled in
+the evidence record.

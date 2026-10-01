@@ -3,6 +3,9 @@ import { createHash } from "node:crypto";
 import { SafeMetricRegistry, StructuredLogger } from "@verus/observability";
 import { parse, type DefaultTreeAdapterMap } from "parse5";
 
+export * from "./document.js";
+export * from "./isolated-document.js";
+
 const MAX_INPUT_BYTES = 5 * 1024 * 1024;
 const MAX_NORMALIZED_CHARS = 1_000_000;
 const MAX_LINKS = 1_000;
