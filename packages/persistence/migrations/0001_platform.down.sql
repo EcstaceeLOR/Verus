@@ -1,0 +1,10 @@
+DROP TABLE IF EXISTS outbox_events;
+DROP TABLE IF EXISTS audit_events;
+DROP FUNCTION IF EXISTS verus_prevent_audit_mutation();
+DROP TABLE IF EXISTS key_metadata;
+DROP TABLE IF EXISTS jobs;
+DROP TABLE IF EXISTS evidence_records;
+DROP TABLE IF EXISTS findings;
+DROP TABLE IF EXISTS policies;
+DROP TABLE IF EXISTS scans;
+DROP TABLE IF EXISTS workspaces;

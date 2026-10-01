@@ -2,5 +2,33 @@
   "name": "@verus/persistence",
   "version": "0.0.0",
   "private": true,
-  "description": "PostgreSQL adapters and migrations for Verus."
+  "description": "PostgreSQL adapters and migrations for Verus.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node scripts/copy-migrations.mjs",
+    "lint": "eslint src test",
+    "migrate": "tsx src/cli.ts up",
+    "migrate:down": "tsx src/cli.ts down",
+    "test": "vitest run --exclude test/postgres.integration.test.ts",
+    "test:integration": "vitest run test/postgres.integration.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@verus/contracts": "workspace:^",
+    "@verus/domain": "workspace:^",
+    "pg": "8.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/pg": "8.23.0",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
 }
