@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a vulnerability privately
+    url: https://github.com/EcstaceeLOR/Verus/security/advisories/new
+    about: Never disclose suspected vulnerabilities in a public issue.
+  - name: Read the support policy
+    url: https://github.com/EcstaceeLOR/Verus/blob/main/SUPPORT.md
+    about: Check supported requests and the information maintainers need.

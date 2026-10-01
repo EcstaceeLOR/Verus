@@ -233,13 +233,11 @@ release gates are defined in the
 
 ## Contributing
 
-Verus is at the contract-first stage. Before opening a large implementation
-pull request, start with the relevant issue and confirm its dependencies are
-complete. Security-sensitive changes must include tests, documented failure
-behavior, and an update to the threat model when the trust boundary changes.
-
-Contribution guidelines, local setup instructions, architectural decisions,
-and a security policy will be added during the foundation milestone.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a change. Start with the
+relevant issue and confirm its dependencies are complete. Security-sensitive
+changes require tests, documented failure behavior, and an update to the threat
+model when a trust boundary changes. Report vulnerabilities only through the
+private route in [SECURITY.md](SECURITY.md).
 
 ## Responsible use
 
@@ -247,3 +245,7 @@ Verus is security infrastructure, not financial advice. A clean scan is not a
 guarantee that content is accurate, safe, complete, or suitable for a trading
 decision. Operators remain responsible for model permissions, account controls,
 human review, and compliance with applicable laws and platform terms.
+
+## License
+
+Verus is licensed under the [Apache License 2.0](LICENSE).
