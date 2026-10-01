@@ -8,7 +8,12 @@
       { "id": "parser", "class": "content", "required": true, "status": "pass" },
       { "id": "retriever", "class": "security", "required": true, "status": "pass" }
     ],
-    "evidence": { "required": true, "minimum_bps": 8000, "claim_bps": [9200], "material_conflict": false },
+    "evidence": {
+      "required": true,
+      "minimum_bps": 8000,
+      "claim_bps": [9200],
+      "material_conflict": false
+    },
     "rules": [{ "id": "workspace-default", "action": "allow" }],
     "expected": { "disposition": "allow", "reason_codes": [] }
   },
@@ -17,13 +22,21 @@
     "policy_available": true,
     "findings": [],
     "controls": [],
-    "evidence": { "required": false, "minimum_bps": 0, "claim_bps": [], "material_conflict": false },
+    "evidence": {
+      "required": false,
+      "minimum_bps": 0,
+      "claim_bps": [],
+      "material_conflict": false
+    },
     "rules": [
       { "id": "integration-allow", "action": "allow" },
       { "id": "emergency-deny", "action": "block", "reason_code": "EMERGENCY_DENY_MATCH" },
       { "id": "workspace-review", "action": "review", "reason_code": "WORKSPACE_REVIEW_REQUIRED" }
     ],
-    "expected": { "disposition": "block", "reason_codes": ["EMERGENCY_DENY_MATCH", "WORKSPACE_REVIEW_REQUIRED"] }
+    "expected": {
+      "disposition": "block",
+      "reason_codes": ["EMERGENCY_DENY_MATCH", "WORKSPACE_REVIEW_REQUIRED"]
+    }
   },
   {
     "name": "medium-finding-requires-review-despite-low-detector-confidence",
@@ -32,7 +45,12 @@
       { "id": "finding-b", "category": "obfuscation", "severity": "medium", "confidence_bps": 1200 }
     ],
     "controls": [],
-    "evidence": { "required": false, "minimum_bps": 0, "claim_bps": [], "material_conflict": false },
+    "evidence": {
+      "required": false,
+      "minimum_bps": 0,
+      "claim_bps": [],
+      "material_conflict": false
+    },
     "rules": [],
     "expected": { "disposition": "review", "reason_codes": ["FINDING_MEDIUM"] }
   },
@@ -41,10 +59,20 @@
     "policy_available": true,
     "model_suggested_disposition": "allow",
     "findings": [
-      { "id": "finding-a", "category": "indirect_prompt_injection", "severity": "high", "confidence_bps": 9700 }
+      {
+        "id": "finding-a",
+        "category": "indirect_prompt_injection",
+        "severity": "high",
+        "confidence_bps": 9700
+      }
     ],
     "controls": [],
-    "evidence": { "required": false, "minimum_bps": 0, "claim_bps": [], "material_conflict": false },
+    "evidence": {
+      "required": false,
+      "minimum_bps": 0,
+      "claim_bps": [],
+      "material_conflict": false
+    },
     "rules": [{ "id": "workspace-allow", "action": "allow" }],
     "expected": { "disposition": "block", "reason_codes": ["FINDING_HIGH"] }
   },
@@ -52,11 +80,26 @@
     "name": "conflicting-findings-use-the-most-restrictive-floor",
     "policy_available": true,
     "findings": [
-      { "id": "finding-review", "category": "contradiction", "severity": "medium", "confidence_bps": 9900 },
-      { "id": "finding-block", "category": "direct_prompt_injection", "severity": "high", "confidence_bps": 7600 }
+      {
+        "id": "finding-review",
+        "category": "contradiction",
+        "severity": "medium",
+        "confidence_bps": 9900
+      },
+      {
+        "id": "finding-block",
+        "category": "direct_prompt_injection",
+        "severity": "high",
+        "confidence_bps": 7600
+      }
     ],
     "controls": [],
-    "evidence": { "required": false, "minimum_bps": 0, "claim_bps": [], "material_conflict": false },
+    "evidence": {
+      "required": false,
+      "minimum_bps": 0,
+      "claim_bps": [],
+      "material_conflict": false
+    },
     "rules": [],
     "expected": { "disposition": "block", "reason_codes": ["FINDING_HIGH", "FINDING_MEDIUM"] }
   },
@@ -67,18 +110,34 @@
     "controls": [
       { "id": "network-quarantine", "class": "security", "required": true, "status": "unavailable" }
     ],
-    "evidence": { "required": false, "minimum_bps": 0, "claim_bps": [], "material_conflict": false },
+    "evidence": {
+      "required": false,
+      "minimum_bps": 0,
+      "claim_bps": [],
+      "material_conflict": false
+    },
     "rules": [],
-    "expected": { "disposition": "block", "reason_codes": ["REQUIRED_SECURITY_CONTROL_UNAVAILABLE"] }
+    "expected": {
+      "disposition": "block",
+      "reason_codes": ["REQUIRED_SECURITY_CONTROL_UNAVAILABLE"]
+    }
   },
   {
     "name": "partial-evidence-failure-requires-review",
     "policy_available": true,
     "findings": [],
     "controls": [],
-    "evidence": { "required": true, "minimum_bps": 8000, "claim_bps": [9100, 6400], "material_conflict": true },
+    "evidence": {
+      "required": true,
+      "minimum_bps": 8000,
+      "claim_bps": [9100, 6400],
+      "material_conflict": true
+    },
     "rules": [],
-    "expected": { "disposition": "review", "reason_codes": ["EVIDENCE_BELOW_THRESHOLD", "MATERIAL_CONFLICT_UNRESOLVED"] }
+    "expected": {
+      "disposition": "review",
+      "reason_codes": ["EVIDENCE_BELOW_THRESHOLD", "MATERIAL_CONFLICT_UNRESOLVED"]
+    }
   },
   {
     "name": "optional-enrichment-failure-does-not-change-disposition",
@@ -87,7 +146,12 @@
     "controls": [
       { "id": "summary", "class": "optional", "required": false, "status": "unavailable" }
     ],
-    "evidence": { "required": false, "minimum_bps": 0, "claim_bps": [], "material_conflict": false },
+    "evidence": {
+      "required": false,
+      "minimum_bps": 0,
+      "claim_bps": [],
+      "material_conflict": false
+    },
     "rules": [],
     "expected": { "disposition": "allow", "reason_codes": ["OPTIONAL_CONTROL_UNAVAILABLE"] }
   },
@@ -96,7 +160,12 @@
     "policy_available": false,
     "findings": [],
     "controls": [],
-    "evidence": { "required": false, "minimum_bps": 0, "claim_bps": [], "material_conflict": false },
+    "evidence": {
+      "required": false,
+      "minimum_bps": 0,
+      "claim_bps": [],
+      "material_conflict": false
+    },
     "rules": [],
     "expected": { "disposition": "block", "reason_codes": ["POLICY_NO_MATCH"] }
   },
@@ -104,10 +173,20 @@
     "name": "unknown-finding-category-defaults-to-block",
     "policy_available": true,
     "findings": [
-      { "id": "finding-unknown", "category": "model_override", "severity": "low", "confidence_bps": 10000 }
+      {
+        "id": "finding-unknown",
+        "category": "model_override",
+        "severity": "low",
+        "confidence_bps": 10000
+      }
     ],
     "controls": [],
-    "evidence": { "required": false, "minimum_bps": 0, "claim_bps": [], "material_conflict": false },
+    "evidence": {
+      "required": false,
+      "minimum_bps": 0,
+      "claim_bps": [],
+      "material_conflict": false
+    },
     "rules": [],
     "expected": { "disposition": "block", "reason_codes": ["UNKNOWN_FINDING_CATEGORY"] }
   },
@@ -116,7 +195,12 @@
     "policy_available": true,
     "findings": [],
     "controls": [],
-    "evidence": { "required": false, "minimum_bps": 0, "claim_bps": [], "material_conflict": false },
+    "evidence": {
+      "required": false,
+      "minimum_bps": 0,
+      "claim_bps": [],
+      "material_conflict": false
+    },
     "rules": [{ "id": "invalid-action", "action": "permit" }],
     "expected": { "disposition": "block", "reason_codes": ["UNKNOWN_POLICY_ACTION"] }
   }

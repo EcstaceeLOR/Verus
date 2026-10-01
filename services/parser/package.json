@@ -1,0 +1,6 @@
+{
+  "name": "@verus/parser",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Resource-isolated Verus parser service."
+}

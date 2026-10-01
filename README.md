@@ -2,24 +2,37 @@
 
 **The context firewall for trading agents.**
 
-Verus converts untrusted financial content into verified, structured, and
-auditable context before that content reaches an AI trading or research agent.
+Verus converts untrusted financial content into verified, structured, and auditable context before
+that content reaches an AI trading or research agent.
 
-Financial agents routinely ingest news, filings, issuer announcements, social
-posts, webpages, and uploaded documents. Those inputs can contain prompt
-injection, hidden instructions, impersonated sources, stale claims, malformed
-content, or contradictory data. A conventional order-risk check happens after
-the model has already reasoned over that material. Verus protects the earlier
+Financial agents routinely ingest news, filings, issuer announcements, social posts, webpages, and
+uploaded documents. Those inputs can contain prompt injection, hidden instructions, impersonated
+sources, stale claims, malformed content, or contradictory data. A conventional order-risk check
+happens after the model has already reasoned over that material. Verus protects the earlier
 boundary: what the model is allowed to see and trust.
 
-> **Status:** Verus is in active pre-release development. The public interfaces
-> and security contracts are being specified before implementation. It is not
-> yet suitable for live trading or production security decisions.
+> **Status:** Verus is in active pre-release development. The public interfaces and security
+> contracts are being specified before implementation. It is not yet suitable for live trading or
+> production security decisions.
+
+## Quick start
+
+The repository pins Node.js 24.19.0 and pnpm 12.8.1. From a clean checkout:
+
+```sh
+corepack pnpm install --frozen-lockfile
+corepack pnpm check
+corepack pnpm dev
+```
+
+The console opens at `http://127.0.0.1:3000` and the API at `http://127.0.0.1:3001`. See the
+[local development guide](docs/development/local-development.md) for Docker dependencies, supported
+commands, ports, and safe cleanup.
 
 ## What Verus does
 
-Verus accepts a URL, document, text payload, or feed event and processes it as
-untrusted data. It then:
+Verus accepts a URL, document, text payload, or feed event and processes it as untrusted data. It
+then:
 
 1. quarantines and safely retrieves the content;
 2. canonicalizes text and exposes hidden or deceptive representation;
@@ -31,14 +44,14 @@ untrusted data. It then:
 8. emits a signed **Context Capsule** for downstream agents; and
 9. preserves a tamper-evident audit trail for operators and reviewers.
 
-Verus is designed to sit in front of research agents, trading copilots, RAG
-pipelines, MCP clients, and other systems that use external financial content.
+Verus is designed to sit in front of research agents, trading copilots, RAG pipelines, MCP clients,
+and other systems that use external financial content.
 
 ## Why a context firewall
 
-An execution firewall can reject an oversized or prohibited order, but it
-cannot repair reasoning that was manipulated upstream. Verus treats retrieved
-content as hostile until it has crossed an explicit trust boundary.
+An execution firewall can reject an oversized or prohibited order, but it cannot repair reasoning
+that was manipulated upstream. Verus treats retrieved content as hostile until it has crossed an
+explicit trust boundary.
 
 ```text
  News · filings · webpages · feeds · uploaded documents
@@ -60,16 +73,15 @@ content as hostile until it has crossed an explicit trust boundary.
        Research/trading agent   Human review console
 ```
 
-The downstream agent receives constrained facts, citations, security findings,
-and a disposition. In strict mode, it does not receive the original raw content.
+The downstream agent receives constrained facts, citations, security findings, and a disposition. In
+strict mode, it does not receive the original raw content.
 
 ## Context Capsules
 
-A Context Capsule is the versioned output contract between Verus and a
-downstream agent. The published
-[v1 wire contract](contracts/v1/README.md) defines its exact JSON Schema,
-TypeScript types, deterministic serialization, signature input, compatibility
-rules, and conformance fixtures. A simplified shape is:
+A Context Capsule is the versioned output contract between Verus and a downstream agent. The
+published [v1 wire contract](contracts/v1/README.md) defines its exact JSON Schema, TypeScript
+types, deterministic serialization, signature input, compatibility rules, and conformance fixtures.
+A simplified shape is:
 
 ```json
 {
@@ -117,47 +129,44 @@ rules, and conformance fixtures. A simplified shape is:
 }
 ```
 
-Capsule signatures prove integrity and provenance within the Verus system. They
-do not, by themselves, prove that a real-world claim is true.
+Capsule signatures prove integrity and provenance within the Verus system. They do not, by
+themselves, prove that a real-world claim is true.
 
 ## Security model
 
 Verus is being built around the following principles:
 
-- **Fail closed.** Retrieval, parsing, verification, and policy failures cannot
-  silently become trusted context.
-- **Data is not instruction.** Untrusted content is never allowed to redefine
-  system policy or authorize tool use.
-- **Deterministic controls first.** Models may assist classification and
-  extraction, but deterministic policy decides what crosses the boundary.
-- **Evidence over confidence.** Every accepted material claim must remain tied
-  to a retrievable, timestamped source.
-- **Least privilege.** Connectors and downstream integrations receive only the
-  permissions required for their task. Trading-account access is read-only by
-  default.
-- **Reproducible decisions.** A verdict records the input digest, policy
-  version, detector versions, evidence, and resulting disposition.
-- **Explicit uncertainty.** Conflicting, stale, incomplete, or unverifiable
-  evidence is surfaced rather than averaged into false certainty.
-- **No security theatre.** Verus will publish its threat model, benchmark
-  corpus, limitations, and residual risks.
+- **Fail closed.** Retrieval, parsing, verification, and policy failures cannot silently become
+  trusted context.
+- **Data is not instruction.** Untrusted content is never allowed to redefine system policy or
+  authorize tool use.
+- **Deterministic controls first.** Models may assist classification and extraction, but
+  deterministic policy decides what crosses the boundary.
+- **Evidence over confidence.** Every accepted material claim must remain tied to a retrievable,
+  timestamped source.
+- **Least privilege.** Connectors and downstream integrations receive only the permissions required
+  for their task. Trading-account access is read-only by default.
+- **Reproducible decisions.** A verdict records the input digest, policy version, detector versions,
+  evidence, and resulting disposition.
+- **Explicit uncertainty.** Conflicting, stale, incomplete, or unverifiable evidence is surfaced
+  rather than averaged into false certainty.
+- **No security theatre.** Verus will publish its threat model, benchmark corpus, limitations, and
+  residual risks.
 
 The normative [threat model](docs/security/threat-model.md) and
-[policy and decision semantics](docs/security/policy-semantics.md) define these
-guarantees, precedence rules, failure behavior, and residual risks. The
+[policy and decision semantics](docs/security/policy-semantics.md) define these guarantees,
+precedence rules, failure behavior, and residual risks. The
 [source, evidence, and data-classification rules](docs/security/source-evidence-data-classification.md)
-keep identity assurance separate from claim verification and govern sensitive
-data throughout its lifecycle.
+keep identity assurance separate from claim verification and govern sensitive data throughout its
+lifecycle.
 
-Verus is one layer in a defense-in-depth architecture. It does not replace
-exchange permissions, human approval, position limits, or an outbound execution
-firewall.
+Verus is one layer in a defense-in-depth architecture. It does not replace exchange permissions,
+human approval, position limits, or an outbound execution firewall.
 
-The security objectives, trust boundaries, abuse cases, control mappings, and
-residual risks are maintained in the [Verus Threat Model](docs/security/threat-model.md).
-The approved [production architecture](docs/architecture/README.md) defines
-runtime isolation, dependency direction, storage, execution, and supported
-deployment topologies.
+The security objectives, trust boundaries, abuse cases, control mappings, and residual risks are
+maintained in the [Verus Threat Model](docs/security/threat-model.md). The approved
+[production architecture](docs/architecture/README.md) defines runtime isolation, dependency
+direction, storage, execution, and supported deployment topologies.
 
 ## Product surfaces
 
@@ -173,8 +182,8 @@ The production release is planned to provide:
 - webhook delivery for verdicts and source-health events; and
 - a public red-team benchmark and reproducible evaluation harness.
 
-These interfaces will share the same policy engine and versioned contracts so a
-scan has equivalent semantics across local, hosted, and agent integrations.
+These interfaces will share the same policy engine and versioned contracts so a scan has equivalent
+semantics across local, hosted, and agent integrations.
 
 ## Initial scope
 
@@ -187,9 +196,9 @@ Version 1 focuses on financial research content used by agents:
 - user-supplied text and documents; and
 - structured events consumed by trading research workflows.
 
-The first release will classify content as `allow`, `review`, or `block`. It
-will not place trades, hold funds, manage exchange credentials with withdrawal
-permission, or claim to determine investment truth.
+The first release will classify content as `allow`, `review`, or `block`. It will not place trades,
+hold funds, manage exchange credentials with withdrawal permission, or claim to determine investment
+truth.
 
 ## Production definition of done
 
@@ -223,28 +232,27 @@ Development is organized as a dependency-ordered production backlog:
 8. production security and operations; and
 9. v1.0 release qualification and General Availability.
 
-Start with the pinned [v1.0 production roadmap](https://github.com/EcstaceeLOR/Verus/issues/1),
-then use the [open milestones](https://github.com/EcstaceeLOR/Verus/milestones)
-for acceptance criteria, native dependencies, and current progress.
+Start with the pinned [v1.0 production roadmap](https://github.com/EcstaceeLOR/Verus/issues/1), then
+use the [open milestones](https://github.com/EcstaceeLOR/Verus/milestones) for acceptance criteria,
+native dependencies, and current progress.
 
-The authoritative v1 scope, supported workflows, measurable requirements, and
-release gates are defined in the
+The authoritative v1 scope, supported workflows, measurable requirements, and release gates are
+defined in the
 [Verus v1 Product Requirements and Release Contract](docs/product/requirements-v1.md).
 
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a change. Start with the
-relevant issue and confirm its dependencies are complete. Security-sensitive
-changes require tests, documented failure behavior, and an update to the threat
-model when a trust boundary changes. Report vulnerabilities only through the
-private route in [SECURITY.md](SECURITY.md).
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a change. Start with the relevant issue and
+confirm its dependencies are complete. Security-sensitive changes require tests, documented failure
+behavior, and an update to the threat model when a trust boundary changes. Report vulnerabilities
+only through the private route in [SECURITY.md](SECURITY.md).
 
 ## Responsible use
 
-Verus is security infrastructure, not financial advice. A clean scan is not a
-guarantee that content is accurate, safe, complete, or suitable for a trading
-decision. Operators remain responsible for model permissions, account controls,
-human review, and compliance with applicable laws and platform terms.
+Verus is security infrastructure, not financial advice. A clean scan is not a guarantee that content
+is accurate, safe, complete, or suitable for a trading decision. Operators remain responsible for
+model permissions, account controls, human review, and compliance with applicable laws and platform
+terms.
 
 ## License
 

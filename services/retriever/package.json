@@ -1,0 +1,6 @@
+{
+  "name": "@verus/retriever",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Network-quarantined Verus retrieval service."
+}

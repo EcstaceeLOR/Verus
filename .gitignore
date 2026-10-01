@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+.turbo/
+coverage/
+dist/
+node_modules/
+*.log
+*.tsbuildinfo
+.DS_Store
+Thumbs.db

@@ -8,12 +8,8 @@
   "as_of": "2026-10-01T09:30:00.000Z",
   "subject": {
     "kind": "equity",
-    "symbols": [
-      "EXMPL"
-    ],
-    "entity_ids": [
-      "lei:549300EXAMPLE000001"
-    ]
+    "symbols": ["EXMPL"],
+    "entity_ids": ["lei:549300EXAMPLE000001"]
   },
   "claims": [
     {

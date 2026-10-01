@@ -2,11 +2,7 @@
   {
     "name": "member-order-and-unicode",
     "input": {
-      "z": [
-        3,
-        true,
-        null
-      ],
+      "z": [3, true, null],
       "a": "Verus",
       "nested": {
         "beta": "€",

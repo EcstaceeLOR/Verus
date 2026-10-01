@@ -17,13 +17,29 @@
     { "id": "observability", "layer": "adapter", "capabilities": ["telemetry"] },
     { "id": "sdk", "layer": "adapter", "capabilities": ["http_client"] },
     { "id": "testkit", "layer": "adapter", "capabilities": ["test_only"] },
-    { "id": "api", "layer": "composition", "capabilities": ["http_server", "postgres", "object_store"] },
+    {
+      "id": "api",
+      "layer": "composition",
+      "capabilities": ["http_server", "postgres", "object_store"]
+    },
     { "id": "console", "layer": "composition", "capabilities": ["browser"] },
     { "id": "mcp", "layer": "composition", "capabilities": ["http_client", "mcp_server"] },
-    { "id": "worker", "layer": "composition", "capabilities": ["postgres", "object_store", "job_claim"] },
-    { "id": "retriever", "layer": "composition", "capabilities": ["public_network", "object_capability"] },
+    {
+      "id": "worker",
+      "layer": "composition",
+      "capabilities": ["postgres", "object_store", "job_claim"]
+    },
+    {
+      "id": "retriever",
+      "layer": "composition",
+      "capabilities": ["public_network", "object_capability"]
+    },
     { "id": "parser", "layer": "composition", "capabilities": ["object_capability", "sandbox"] },
-    { "id": "model_gateway", "layer": "composition", "capabilities": ["provider_network", "provider_secret"] }
+    {
+      "id": "model_gateway",
+      "layer": "composition",
+      "capabilities": ["provider_network", "provider_secret"]
+    }
   ],
   "edges": [
     ["domain", "contracts"],
@@ -66,9 +82,40 @@
     ["model_gateway", "observability"]
   ],
   "capability_constraints": [
-    { "node": "policy", "forbidden": ["public_network", "provider_network", "postgres", "object_store", "provider_secret"] },
-    { "node": "retriever", "forbidden": ["postgres", "provider_secret", "signing_key", "exchange_secret"] },
-    { "node": "parser", "forbidden": ["public_network", "provider_network", "postgres", "provider_secret", "signing_key"] },
-    { "node": "model_gateway", "forbidden": ["public_network", "postgres", "object_store", "signing_key", "exchange_secret", "tool_execution"] }
+    {
+      "node": "policy",
+      "forbidden": [
+        "public_network",
+        "provider_network",
+        "postgres",
+        "object_store",
+        "provider_secret"
+      ]
+    },
+    {
+      "node": "retriever",
+      "forbidden": ["postgres", "provider_secret", "signing_key", "exchange_secret"]
+    },
+    {
+      "node": "parser",
+      "forbidden": [
+        "public_network",
+        "provider_network",
+        "postgres",
+        "provider_secret",
+        "signing_key"
+      ]
+    },
+    {
+      "node": "model_gateway",
+      "forbidden": [
+        "public_network",
+        "postgres",
+        "object_store",
+        "signing_key",
+        "exchange_secret",
+        "tool_execution"
+      ]
+    }
   ]
 }

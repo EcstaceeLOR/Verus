@@ -1,0 +1,6 @@
+{
+  "name": "@verus/worker",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Trusted Verus job worker composition root."
+}

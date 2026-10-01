@@ -10,9 +10,7 @@
     "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
   },
   "finding_ids": [],
-  "reason_codes": [
-    "LOW_CONFIDENCE"
-  ],
+  "reason_codes": ["LOW_CONFIDENCE"],
   "confidence": 0.75,
   "extensions": {}
 }

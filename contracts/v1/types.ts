@@ -14,13 +14,7 @@ export type BasisPoints = number;
 export type Extensions = Readonly<Record<string, unknown>>;
 
 export interface Subject {
-  readonly kind:
-    | "equity"
-    | "etf"
-    | "rtoken"
-    | "stock_perpetual"
-    | "market"
-    | "unknown";
+  readonly kind: "equity" | "etf" | "rtoken" | "stock_perpetual" | "market" | "unknown";
   readonly symbols: readonly string[];
   readonly entity_ids?: readonly string[];
 }
@@ -60,12 +54,7 @@ export interface Claim {
   readonly statement: string;
   readonly value: ClaimValue;
   readonly period?: string;
-  readonly verification:
-    | "verified"
-    | "contradicted"
-    | "unsupported"
-    | "ambiguous"
-    | "pending";
+  readonly verification: "verified" | "contradicted" | "unsupported" | "ambiguous" | "pending";
   readonly confidence_bps: BasisPoints;
   readonly citations: readonly Citation[];
   readonly extensions?: Extensions;
@@ -106,11 +95,7 @@ export interface Evidence {
   readonly identity_state: "verified" | "mismatched" | "unknown";
   readonly source_class?: "primary" | "secondary" | "user_supplied" | "unknown";
   readonly source_tier?:
-    | "blocked"
-    | "unverified"
-    | "attributed"
-    | "verified_secondary"
-    | "verified_primary";
+    "blocked" | "unverified" | "attributed" | "verified_secondary" | "verified_primary";
   readonly quality_grade?: "unusable" | "weak" | "limited" | "supported" | "corroborated";
   readonly published_at?: Timestamp;
   readonly retrieved_at: Timestamp;
@@ -203,11 +188,7 @@ export interface SourceRecord {
   readonly identity_state: "verified" | "mismatched" | "unknown";
   readonly source_class?: "primary" | "secondary" | "user_supplied" | "unknown";
   readonly source_tier?:
-    | "blocked"
-    | "unverified"
-    | "attributed"
-    | "verified_secondary"
-    | "verified_primary";
+    "blocked" | "unverified" | "attributed" | "verified_secondary" | "verified_primary";
   readonly canonical_origins: readonly string[];
   readonly created_at: Timestamp;
   readonly updated_at: Timestamp;

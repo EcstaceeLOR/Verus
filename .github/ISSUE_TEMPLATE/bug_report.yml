@@ -7,8 +7,8 @@ body:
   - type: markdown
     attributes:
       value: >-
-        Do not disclose vulnerabilities, secrets, personal data, portfolio data,
-        or weaponized payloads here. Use private vulnerability reporting.
+        Do not disclose vulnerabilities, secrets, personal data, portfolio data, or weaponized
+        payloads here. Use private vulnerability reporting.
   - type: input
     id: version
     attributes:
