@@ -2,5 +2,27 @@
   "name": "@verus/worker",
   "version": "0.0.0",
   "private": true,
-  "description": "Trusted Verus job worker composition root."
+  "description": "Trusted Verus job worker composition root.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint src test",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@verus/jobs": "workspace:^",
+    "@verus/observability": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
 }

@@ -13,6 +13,7 @@ if (!databaseName.endsWith("_test")) {
 
 const pool = new Pool({ connectionString, max: 4 });
 const workspaceId = "ws_01ARZ3NDEKTSV4RRFFQ69G5FC0";
+const correlationId = "corr_jobs_integration_1234";
 const digest = (character: string): string => `sha256:${character.repeat(64)}`;
 const reference = (character: string): string => `object://sha256/${character.repeat(64)}`;
 const instant = new Date("2026-10-01T10:00:00.000Z");
@@ -46,6 +47,7 @@ describe("PostgreSQL durable job queue", () => {
     const envelope = {
       workspaceId,
       jobId: "job_01ARZ3NDEKTSV4RRFFQ69G5FC1",
+      correlationId,
       queue: "trusted",
       kind: "scan.process",
       envelopeVersion: 1,
@@ -81,6 +83,7 @@ describe("PostgreSQL durable job queue", () => {
       now: instant,
     });
     expect(abandoned).toMatchObject({ attempt: 1, payloadRef: reference("1") });
+    expect(abandoned).toMatchObject({ correlationId });
 
     await expect(
       queue.reapExpired({ workspaceId, queue: "trusted", now: later(5_001) }),
@@ -116,17 +119,19 @@ describe("PostgreSQL durable job queue", () => {
         now: later(6_600),
       }),
     ).resolves.toBeUndefined();
-    const committed = await pool.query<{ count: string }>(
-      "SELECT count(*) FROM job_results WHERE workspace_id = $1 AND effect_key = $2",
+    const committed = await pool.query<{ correlation_id: string; count: string }>(
+      `SELECT correlation_id, count(*) FROM job_results
+       WHERE workspace_id = $1 AND effect_key = $2 GROUP BY correlation_id`,
       [workspaceId, envelope.effectKey],
     );
-    expect(committed.rows[0]?.count).toBe("1");
+    expect(committed.rows).toEqual([{ correlation_id: correlationId, count: "1" }]);
   });
 
   it("bounds retries and exposes poison jobs without hostile payload content", async () => {
     await queue.enqueue({
       workspaceId,
       jobId: "job_01ARZ3NDEKTSV4RRFFQ69G5FC3",
+      correlationId,
       queue: "parser",
       kind: "document.parse",
       envelopeVersion: 1,
@@ -206,6 +211,7 @@ describe("PostgreSQL durable job queue", () => {
       actorType: "system",
       actorId: "jobs-operator",
       auditEventId: "jobs-replay-event-1",
+      correlationId: "corr_jobs_replay_1234",
       now: later(2_000),
     });
     const replay = await pool.query<{ replayed_from_job_id: string }>(
@@ -226,6 +232,7 @@ describe("PostgreSQL durable job queue", () => {
     await queue.enqueue({
       workspaceId,
       jobId: "job_01ARZ3NDEKTSV4RRFFQ69G5FC4",
+      correlationId,
       queue: "retriever",
       kind: "source.retrieve",
       envelopeVersion: 1,
@@ -284,6 +291,7 @@ describe("PostgreSQL durable job queue", () => {
     await queue.enqueue({
       workspaceId,
       jobId: "job_01ARZ3NDEKTSV4RRFFQ69G5FC6",
+      correlationId,
       queue: "model",
       kind: "model.evaluate",
       envelopeVersion: 1,

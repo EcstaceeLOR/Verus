@@ -2,24 +2,8 @@ name: Persistence
 
 on:
   pull_request:
-    paths:
-      - ".github/workflows/persistence.yml"
-      - "packages/persistence/**"
-      - "packages/contracts/**"
-      - "packages/crypto/**"
-      - "packages/jobs/**"
-      - "packages/domain/**"
-      - "pnpm-lock.yaml"
   push:
     branches: [main]
-    paths:
-      - ".github/workflows/persistence.yml"
-      - "packages/persistence/**"
-      - "packages/contracts/**"
-      - "packages/crypto/**"
-      - "packages/jobs/**"
-      - "packages/domain/**"
-      - "pnpm-lock.yaml"
 
 permissions:
   contents: read

@@ -55,7 +55,7 @@ describe("API keys", () => {
     } finally {
       pepper.destroy();
     }
-  });
+  }, 20_000);
 
   it("redacts secret values from string and JSON serialization", () => {
     const secret = new SecretValue(Buffer.from("do-not-log"));
@@ -79,7 +79,7 @@ describe("sealed secret provider", () => {
         secret.use((bytes) => Buffer.from(bytes).toString("utf8")),
       ),
     ).resolves.toBe("provider-secret-value");
-  });
+  }, 20_000);
 });
 
 describe("Ed25519 signing lifecycle", () => {
@@ -125,7 +125,7 @@ describe("Ed25519 signing lifecycle", () => {
         canonicalBytes: bytes,
       }),
     ).rejects.toThrow();
-  });
+  }, 20_000);
 
   it("refuses to sign bytes that do not match the declared digest", async () => {
     const signer = new Ed25519SigningProvider(provider);

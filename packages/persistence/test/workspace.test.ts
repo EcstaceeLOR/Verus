@@ -32,7 +32,7 @@ describe("scan state machine", () => {
 describe("migration manifest", () => {
   it("loads paired, checksummed migrations in order", async () => {
     const migrations = await loadMigrations();
-    expect(migrations.map(({ version }) => version)).toEqual([1, 2, 3, 4]);
+    expect(migrations.map(({ version }) => version)).toEqual([1, 2, 3, 4, 5]);
     expect(migrations[0]?.up).toContain("FORCE ROW LEVEL SECURITY");
     expect(migrations[0]?.down).toContain("DROP TABLE IF EXISTS workspaces");
     expect(migrations[0]?.checksum).toMatch(/^[0-9a-f]{64}$/);

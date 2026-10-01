@@ -36,6 +36,11 @@ reviewed issue-by-issue build plan. The bypass is audited and does not waive tes
 PR creation, or acceptance evidence. Before v1.0 GA, a second qualified reviewer is required for
 release approval and security-critical launch blockers.
 
+The protected `main` branch requires the `quality`, `security`, and `postgres` status checks on the
+latest commit. Quality publishes JUnit and coverage artifacts; security verifies dependencies and
+workflow policy; PostgreSQL exercises forward migration, rollback/reapplication, and integration
+behavior. Workflow actions are pinned to commit SHAs and receive read-only repository permission.
+
 ## Releases
 
 Releases use immutable tags, generated notes, reproducible artifacts, provenance, checksums,
