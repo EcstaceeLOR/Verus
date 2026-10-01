@@ -1,6 +1,7 @@
 import { VerusError } from "@verus/domain";
 import type { Pool, PoolClient } from "pg";
 
+import { CredentialPersistence } from "./credentials.js";
 import { IdentityPersistence } from "./identity.js";
 import { NOOP_PERSISTENCE_TELEMETRY, type PersistenceTelemetry } from "./telemetry.js";
 
@@ -78,6 +79,10 @@ export class WorkspacePersistence {
 
   identity(): IdentityPersistence {
     return new IdentityPersistence(this.#client, this.#workspaceId);
+  }
+
+  credentials(): CredentialPersistence {
+    return new CredentialPersistence(this.#client, this.#workspaceId);
   }
 
   async provisionWorkspace(input: {

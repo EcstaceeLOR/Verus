@@ -7,6 +7,11 @@ export {
 } from "./migrations.js";
 export { IdentityPersistence } from "./identity.js";
 export {
+  CredentialPersistence,
+  type DiscoverableSigningKey,
+  type StoredApiKey,
+} from "./credentials.js";
+export {
   NOOP_PERSISTENCE_TELEMETRY,
   type PersistenceEvent,
   type PersistenceEventName,
