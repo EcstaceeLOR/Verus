@@ -22,6 +22,17 @@ const projects = Object.freeze([
   ["worker", "apps/worker"],
 ]);
 
+const build = spawnSync(
+  process.execPath,
+  [resolve(root, "scripts", "run-turbo.mjs"), "run", "build"],
+  {
+    cwd: root,
+    stdio: "inherit",
+  },
+);
+if (build.error !== undefined) throw build.error;
+if (build.status !== 0) process.exit(build.status ?? 1);
+
 await rm(artifactRoot, { recursive: true, force: true });
 await mkdir(resolve(artifactRoot, "test"), { recursive: true });
 await mkdir(resolve(artifactRoot, "coverage"), { recursive: true });

@@ -5,6 +5,7 @@ import { parse, type DefaultTreeAdapterMap } from "parse5";
 
 export * from "./document.js";
 export * from "./isolated-document.js";
+export * from "./canonicalize.js";
 
 const MAX_INPUT_BYTES = 5 * 1024 * 1024;
 const MAX_NORMALIZED_CHARS = 1_000_000;
