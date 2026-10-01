@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import type { IncomingMessage } from "node:http";
 
 import {
   SafeMetricRegistry,
@@ -12,6 +13,7 @@ import { Pool } from "pg";
 
 import { healthPayload, parsePort } from "./health.js";
 import { createIngestionHandler } from "./ingestion.js";
+import { createUploadHandler } from "./upload.js";
 
 const host = process.env.VERUS_API_HOST ?? "127.0.0.1";
 const port = parsePort(process.env.VERUS_API_PORT ?? "3001");
@@ -20,17 +22,25 @@ const metrics = new SafeMetricRegistry();
 const databaseUrl = process.env.VERUS_DATABASE_URL;
 const internalWorkspace = process.env.VERUS_INTERNAL_WORKSPACE_ID;
 const internalToken = process.env.VERUS_INTERNAL_INGESTION_TOKEN;
+const quarantineDirectory = process.env.VERUS_QUARANTINE_DIRECTORY;
 const pool =
   databaseUrl === undefined ? undefined : new Pool({ connectionString: databaseUrl, max: 10 });
+const resolveInternalWorkspace = (request: IncomingMessage): string | undefined =>
+  request.headers["x-verus-internal-token"] === internalToken ? internalWorkspace : undefined;
 const ingestion =
   pool === undefined
     ? undefined
     : createIngestionHandler({
         service: new IngestionService(pool),
-        resolveWorkspace: (request) =>
-          request.headers["x-verus-internal-token"] === internalToken
-            ? internalWorkspace
-            : undefined,
+        resolveWorkspace: resolveInternalWorkspace,
+      });
+const uploads =
+  pool === undefined || quarantineDirectory === undefined
+    ? undefined
+    : createUploadHandler({
+        directory: quarantineDirectory,
+        pool,
+        resolveWorkspace: resolveInternalWorkspace,
       });
 
 const server = createServer((request, response) => {
@@ -40,6 +50,7 @@ const server = createServer((request, response) => {
     const requestUrl = new URL(request.url ?? "/", `http://${request.headers.host ?? host}`);
     const isHealth =
       request.method === "GET" && ["/health/live", "/health/ready"].includes(requestUrl.pathname);
+    if (uploads !== undefined && (await uploads(request, response, context))) return;
     if (ingestion !== undefined && (await ingestion(request, response, context))) return;
     const route = isHealth ? requestUrl.pathname.slice(1).replace("/", "_") : "unmatched";
     const status = isHealth ? 200 : 404;

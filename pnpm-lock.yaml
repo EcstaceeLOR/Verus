@@ -229,6 +229,12 @@ importers:
       '@verus/observability':
         specifier: workspace:^
         version: link:../../packages/observability
+      '@verus/persistence':
+        specifier: workspace:^
+        version: link:../../packages/persistence
+      '@verus/quarantine':
+        specifier: workspace:^
+        version: link:../../packages/quarantine
       pg:
         specifier: 8.23.0
         version: 8.23.0
@@ -446,6 +452,18 @@ importers:
         version: 5.0.3(@types/node@26.6.3)(@vitest/coverage-v8@5.0.3)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(tsx@4.23.15))
 
   packages/policy: {}
+
+  packages/quarantine:
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.3
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@types/node@26.6.3)(@vitest/coverage-v8@5.0.3)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(tsx@4.23.15))
 
   packages/sdk: {}
 

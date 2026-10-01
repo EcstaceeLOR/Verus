@@ -16,6 +16,7 @@
     { "id": "jobs", "layer": "adapter", "capabilities": ["postgres"] },
     { "id": "observability", "layer": "adapter", "capabilities": ["telemetry"] },
     { "id": "ingestion", "layer": "adapter", "capabilities": ["postgres"] },
+    { "id": "quarantine", "layer": "adapter", "capabilities": ["object_store"] },
     { "id": "sdk", "layer": "adapter", "capabilities": ["http_client"] },
     { "id": "testkit", "layer": "adapter", "capabilities": ["test_only"] },
     {
