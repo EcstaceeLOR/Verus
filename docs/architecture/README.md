@@ -124,6 +124,7 @@ packages/
   persistence/         PostgreSQL adapters and migrations
   jobs/                job envelopes, leases, retry, and outbox adapters
   observability/       safe logging, metrics, tracing, and audit helpers
+  ingestion/           tenant-scoped, idempotent ingestion acceptance boundary
   sdk/                 public TypeScript client
   testkit/             deterministic fixtures and integration harnesses
 deploy/

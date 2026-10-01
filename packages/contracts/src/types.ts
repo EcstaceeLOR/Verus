@@ -176,6 +176,12 @@ export interface IngestionRequest {
   readonly request_id: VerusId;
   readonly workspace_id: VerusId;
   readonly submitted_at: Timestamp;
+  readonly idempotency_key: string;
+  readonly provenance: Readonly<{
+    source_class: "primary" | "secondary" | "user_supplied" | "unknown";
+    submitted_by: string;
+    asserted_origin?: string;
+  }>;
   readonly input: IngestionInput;
   readonly extensions: Extensions;
 }

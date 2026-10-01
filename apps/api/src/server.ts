@@ -7,21 +7,40 @@ import {
   propagationHeaders,
   runWithTelemetryContext,
 } from "@verus/observability";
+import { IngestionService } from "@verus/ingestion";
+import { Pool } from "pg";
 
 import { healthPayload, parsePort } from "./health.js";
+import { createIngestionHandler } from "./ingestion.js";
 
 const host = process.env.VERUS_API_HOST ?? "127.0.0.1";
 const port = parsePort(process.env.VERUS_API_PORT ?? "3001");
 const logger = new StructuredLogger("verus-api");
 const metrics = new SafeMetricRegistry();
+const databaseUrl = process.env.VERUS_DATABASE_URL;
+const internalWorkspace = process.env.VERUS_INTERNAL_WORKSPACE_ID;
+const internalToken = process.env.VERUS_INTERNAL_INGESTION_TOKEN;
+const pool =
+  databaseUrl === undefined ? undefined : new Pool({ connectionString: databaseUrl, max: 10 });
+const ingestion =
+  pool === undefined
+    ? undefined
+    : createIngestionHandler({
+        service: new IngestionService(pool),
+        resolveWorkspace: (request) =>
+          request.headers["x-verus-internal-token"] === internalToken
+            ? internalWorkspace
+            : undefined,
+      });
 
 const server = createServer((request, response) => {
   const context = contextFromHeaders(request.headers);
-  runWithTelemetryContext(context, () => {
+  void runWithTelemetryContext(context, async () => {
     const startedAt = performance.now();
     const requestUrl = new URL(request.url ?? "/", `http://${request.headers.host ?? host}`);
     const isHealth =
       request.method === "GET" && ["/health/live", "/health/ready"].includes(requestUrl.pathname);
+    if (ingestion !== undefined && (await ingestion(request, response, context))) return;
     const route = isHealth ? requestUrl.pathname.slice(1).replace("/", "_") : "unmatched";
     const status = isHealth ? 200 : 404;
     const propagated = propagationHeaders(context);
@@ -85,7 +104,9 @@ function shutdown(signal: NodeJS.Signals): void {
       outcome: "success",
       reasonCode: signal === "SIGINT" ? "SIGINT" : "SIGTERM",
     });
-    process.exitCode = 0;
+    void pool?.end().finally(() => {
+      process.exitCode = 0;
+    });
   });
 }
 
