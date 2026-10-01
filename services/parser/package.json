@@ -18,10 +18,14 @@
   },
   "dependencies": {
     "@verus/observability": "workspace:*",
-    "parse5": "7.3.0"
+    "fast-xml-parser": "5.5.6",
+    "parse5": "7.3.0",
+    "pdfjs-dist": "5.4.624",
+    "yauzl": "3.2.0"
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@types/yauzl": "2.10.3",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
