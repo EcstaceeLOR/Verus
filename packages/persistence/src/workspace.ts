@@ -1,0 +1,435 @@
+import { VerusError } from "@verus/domain";
+import type { Pool, PoolClient } from "pg";
+
+import { NOOP_PERSISTENCE_TELEMETRY, type PersistenceTelemetry } from "./telemetry.js";
+
+declare const workspaceIdBrand: unique symbol;
+export type WorkspaceId = string & { readonly [workspaceIdBrand]: true };
+
+export type ScanState =
+  "accepted" | "allowed" | "blocked" | "cancelled" | "failed" | "processing" | "queued" | "review";
+
+export interface ScanRecord {
+  readonly workspaceId: WorkspaceId;
+  readonly scanId: string;
+  readonly requestId: string;
+  readonly inputDigest: string;
+  readonly state: ScanState;
+  readonly stateVersion: number;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+}
+
+const WORKSPACE_ID_PATTERN = /^ws_[0-9A-HJKMNP-TV-Z]{26}$/;
+const transitions = Object.freeze({
+  accepted: ["queued", "cancelled"],
+  queued: ["processing", "cancelled"],
+  processing: ["review", "allowed", "blocked", "failed", "cancelled"],
+  review: ["allowed", "blocked", "cancelled"],
+  allowed: [],
+  blocked: [],
+  failed: [],
+  cancelled: [],
+} as const satisfies Readonly<Record<ScanState, readonly ScanState[]>>);
+
+export function workspaceId(value: string): WorkspaceId {
+  if (!WORKSPACE_ID_PATTERN.test(value)) throw new TypeError("Invalid workspace identifier.");
+  return value as WorkspaceId;
+}
+
+export function canTransitionScan(from: ScanState, to: ScanState): boolean {
+  const allowed: readonly ScanState[] = transitions[from];
+  return allowed.includes(to);
+}
+
+interface ScanRow {
+  created_at: Date;
+  input_digest: string;
+  request_id: string;
+  scan_id: string;
+  state: ScanState;
+  state_version: string;
+  updated_at: Date;
+  workspace_id: WorkspaceId;
+}
+
+function toScan(row: ScanRow): Readonly<ScanRecord> {
+  return Object.freeze({
+    workspaceId: row.workspace_id,
+    scanId: row.scan_id,
+    requestId: row.request_id,
+    inputDigest: row.input_digest,
+    state: row.state,
+    stateVersion: Number(row.state_version),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  });
+}
+
+export class WorkspacePersistence {
+  readonly #client: PoolClient;
+  readonly #workspaceId: WorkspaceId;
+
+  constructor(client: PoolClient, scopedWorkspaceId: WorkspaceId) {
+    this.#client = client;
+    this.#workspaceId = scopedWorkspaceId;
+  }
+
+  async provisionWorkspace(input: {
+    readonly slug: string;
+    readonly displayName: string;
+  }): Promise<void> {
+    await this.#client.query(
+      "INSERT INTO workspaces (workspace_id, slug, display_name) VALUES ($1, $2, $3)",
+      [this.#workspaceId, input.slug, input.displayName],
+    );
+  }
+
+  async getWorkspace(): Promise<Readonly<{ displayName: string; slug: string; status: string }>> {
+    const result = await this.#client.query<{
+      display_name: string;
+      slug: string;
+      status: string;
+    }>(
+      `SELECT display_name, slug, status
+       FROM workspaces WHERE workspace_id = $1`,
+      [this.#workspaceId],
+    );
+    const row = result.rows[0];
+    if (row === undefined) throw new VerusError("NOT_FOUND", "Workspace does not exist.");
+    return Object.freeze({ displayName: row.display_name, slug: row.slug, status: row.status });
+  }
+
+  async createScan(input: {
+    readonly scanId: string;
+    readonly requestId: string;
+    readonly inputDigest: string;
+  }): Promise<Readonly<ScanRecord>> {
+    const result = await this.#client.query<ScanRow>(
+      `INSERT INTO scans (workspace_id, scan_id, request_id, input_digest)
+       VALUES ($1, $2, $3, $4)
+       RETURNING workspace_id, scan_id, request_id, input_digest, state, state_version,
+                 created_at, updated_at`,
+      [this.#workspaceId, input.scanId, input.requestId, input.inputDigest],
+    );
+    return toScan(result.rows[0] as ScanRow);
+  }
+
+  async getScan(scanId: string): Promise<Readonly<ScanRecord>> {
+    const result = await this.#client.query<ScanRow>(
+      `SELECT workspace_id, scan_id, request_id, input_digest, state, state_version,
+              created_at, updated_at
+       FROM scans WHERE workspace_id = $1 AND scan_id = $2`,
+      [this.#workspaceId, scanId],
+    );
+    const row = result.rows[0];
+    if (row === undefined) throw new VerusError("NOT_FOUND", "Scan does not exist.");
+    return toScan(row);
+  }
+
+  async transitionScan(input: {
+    readonly scanId: string;
+    readonly expectedVersion: number;
+    readonly from: ScanState;
+    readonly to: ScanState;
+    readonly failureCode?: string;
+  }): Promise<Readonly<ScanRecord>> {
+    if (!canTransitionScan(input.from, input.to)) {
+      throw new VerusError("CONFLICT", `Invalid scan transition ${input.from} -> ${input.to}.`);
+    }
+    const terminal = ["allowed", "blocked", "failed", "cancelled"].includes(input.to);
+    const result = await this.#client.query<ScanRow>(
+      `UPDATE scans
+       SET state = $4,
+           state_version = state_version + 1,
+           failure_code = $5,
+           updated_at = clock_timestamp(),
+           completed_at = CASE WHEN $6 THEN clock_timestamp() ELSE NULL END
+       WHERE workspace_id = $1 AND scan_id = $2 AND state_version = $3 AND state = $7
+       RETURNING workspace_id, scan_id, request_id, input_digest, state, state_version,
+                 created_at, updated_at`,
+      [
+        this.#workspaceId,
+        input.scanId,
+        input.expectedVersion,
+        input.to,
+        input.failureCode ?? null,
+        terminal,
+        input.from,
+      ],
+    );
+    const row = result.rows[0];
+    if (row !== undefined) return toScan(row);
+    const current = await this.#client.query<{ state: ScanState; state_version: string }>(
+      "SELECT state, state_version FROM scans WHERE workspace_id = $1 AND scan_id = $2",
+      [this.#workspaceId, input.scanId],
+    );
+    if (current.rows[0] === undefined) throw new VerusError("NOT_FOUND", "Scan does not exist.");
+    throw new VerusError("CONFLICT", "Scan state changed concurrently.");
+  }
+
+  async insertPolicy(input: {
+    readonly policyId: string;
+    readonly version: number;
+    readonly lifecycle: "active" | "draft" | "retired";
+    readonly digest: string;
+    readonly document: Readonly<Record<string, unknown>>;
+    readonly createdBy: string;
+  }): Promise<void> {
+    await this.#client.query(
+      `INSERT INTO policies
+         (workspace_id, policy_id, version, lifecycle, digest, document, created_by, promoted_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7,
+               CASE WHEN $4 = 'active' THEN clock_timestamp() ELSE NULL END)`,
+      [
+        this.#workspaceId,
+        input.policyId,
+        input.version,
+        input.lifecycle,
+        input.digest,
+        input.document,
+        input.createdBy,
+      ],
+    );
+  }
+
+  async insertFinding(input: {
+    readonly findingId: string;
+    readonly scanId: string;
+    readonly category: string;
+    readonly severity: string;
+    readonly detectorId: string;
+    readonly reasonCode: string;
+    readonly confidenceBps?: number;
+    readonly location: Readonly<Record<string, unknown>>;
+  }): Promise<void> {
+    await this.#client.query(
+      `INSERT INTO findings
+         (workspace_id, finding_id, scan_id, category, severity, detector_id,
+          reason_code, confidence_bps, location)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        this.#workspaceId,
+        input.findingId,
+        input.scanId,
+        input.category,
+        input.severity,
+        input.detectorId,
+        input.reasonCode,
+        input.confidenceBps ?? null,
+        input.location,
+      ],
+    );
+  }
+
+  async insertEvidence(input: {
+    readonly evidenceId: string;
+    readonly scanId: string;
+    readonly sourceId: string;
+    readonly snapshotDigest: string;
+    readonly identityState: string;
+    readonly freshness: string;
+    readonly retrievedAt: Date;
+  }): Promise<void> {
+    await this.#client.query(
+      `INSERT INTO evidence_records
+         (workspace_id, evidence_id, scan_id, source_id, snapshot_digest,
+          identity_state, freshness, retrieved_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        this.#workspaceId,
+        input.evidenceId,
+        input.scanId,
+        input.sourceId,
+        input.snapshotDigest,
+        input.identityState,
+        input.freshness,
+        input.retrievedAt,
+      ],
+    );
+  }
+
+  async enqueueJob(input: {
+    readonly jobId: string;
+    readonly kind: string;
+    readonly payloadRef: string;
+    readonly idempotencyKey: string;
+    readonly maxAttempts: number;
+  }): Promise<boolean> {
+    const result = await this.#client.query(
+      `INSERT INTO jobs
+         (workspace_id, job_id, kind, payload_ref, idempotency_key, max_attempts)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (workspace_id, kind, idempotency_key) DO NOTHING`,
+      [
+        this.#workspaceId,
+        input.jobId,
+        input.kind,
+        input.payloadRef,
+        input.idempotencyKey,
+        input.maxAttempts,
+      ],
+    );
+    return result.rowCount === 1;
+  }
+
+  async insertKeyMetadata(input: {
+    readonly keyId: string;
+    readonly purpose: "api" | "capsule_signing" | "webhook_signing";
+    readonly providerRef: string;
+    readonly algorithm: string;
+    readonly status: "active" | "destroyed" | "pending" | "retiring" | "revoked";
+  }): Promise<void> {
+    await this.#client.query(
+      `INSERT INTO key_metadata
+         (workspace_id, key_id, purpose, provider_ref, algorithm, status, activated_at)
+       VALUES ($1, $2, $3, $4, $5, $6,
+               CASE WHEN $6 = 'active' THEN clock_timestamp() ELSE NULL END)`,
+      [
+        this.#workspaceId,
+        input.keyId,
+        input.purpose,
+        input.providerRef,
+        input.algorithm,
+        input.status,
+      ],
+    );
+  }
+
+  async appendAuditEvent(input: {
+    readonly eventId: string;
+    readonly actorType: "api_key" | "service" | "system" | "user";
+    readonly actorId: string;
+    readonly action: string;
+    readonly targetType: string;
+    readonly targetId: string;
+    readonly occurredAt: Date;
+    readonly correlationId?: string;
+    readonly reasonCode?: string;
+    readonly previousState?: Readonly<Record<string, unknown>>;
+    readonly newState?: Readonly<Record<string, unknown>>;
+  }): Promise<void> {
+    await this.#client.query(
+      `INSERT INTO audit_events
+         (workspace_id, event_id, actor_type, actor_id, action, target_type, target_id,
+          reason_code, previous_state, new_state, occurred_at, correlation_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+      [
+        this.#workspaceId,
+        input.eventId,
+        input.actorType,
+        input.actorId,
+        input.action,
+        input.targetType,
+        input.targetId,
+        input.reasonCode ?? null,
+        input.previousState ?? null,
+        input.newState ?? null,
+        input.occurredAt,
+        input.correlationId ?? null,
+      ],
+    );
+  }
+
+  async appendOutboxEvent(input: {
+    readonly eventId: string;
+    readonly topic: string;
+    readonly aggregateType: string;
+    readonly aggregateId: string;
+    readonly payload: Readonly<Record<string, unknown>>;
+  }): Promise<void> {
+    await this.#client.query(
+      `INSERT INTO outbox_events
+         (workspace_id, event_id, topic, aggregate_type, aggregate_id, payload)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        this.#workspaceId,
+        input.eventId,
+        input.topic,
+        input.aggregateType,
+        input.aggregateId,
+        input.payload,
+      ],
+    );
+  }
+}
+
+function safeOperation(value: string | undefined): string {
+  return value !== undefined && /^[a-z][a-z0-9_.-]{0,63}$/.test(value) ? value : "workspace";
+}
+
+function emitSafely(
+  telemetry: PersistenceTelemetry,
+  event: Parameters<PersistenceTelemetry["emit"]>[0],
+): void {
+  try {
+    telemetry.emit(event);
+  } catch {
+    // Observability cannot alter transaction success or failure semantics.
+  }
+}
+
+export async function withWorkspaceTransaction<T>(
+  pool: Pool,
+  scopedWorkspaceId: WorkspaceId,
+  operation: (persistence: WorkspacePersistence) => Promise<T>,
+  options: {
+    readonly isolation?: "read committed" | "repeatable read" | "serializable";
+    readonly operationName?: string;
+    readonly telemetry?: PersistenceTelemetry;
+  } = {},
+): Promise<T> {
+  const client = await pool.connect();
+  const telemetry = options.telemetry ?? NOOP_PERSISTENCE_TELEMETRY;
+  const operationName = safeOperation(options.operationName);
+  const isolation = options.isolation ?? "read committed";
+  const isolationSql = {
+    "read committed": "READ COMMITTED",
+    "repeatable read": "REPEATABLE READ",
+    serializable: "SERIALIZABLE",
+  }[isolation];
+  const startedAt = performance.now();
+  try {
+    await client.query("BEGIN");
+    await client.query(`SET TRANSACTION ISOLATION LEVEL ${isolationSql}`);
+    await client.query("SELECT set_config('app.workspace_id', $1, true)", [scopedWorkspaceId]);
+    const result = await operation(new WorkspacePersistence(client, scopedWorkspaceId));
+    await client.query("COMMIT");
+    emitSafely(telemetry, {
+      name: "persistence.transaction.completed",
+      operation: operationName,
+      outcome: "success",
+      durationMs: performance.now() - startedAt,
+    });
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => undefined);
+    emitSafely(telemetry, {
+      name: "persistence.transaction.failed",
+      operation: operationName,
+      outcome: "failure",
+      durationMs: performance.now() - startedAt,
+    });
+    if (error instanceof VerusError) throw error;
+    throw new VerusError("SERVICE_UNAVAILABLE", "Workspace transaction failed.", { cause: error });
+  } finally {
+    client.release();
+  }
+}
+
+export async function provisionWorkspace(
+  pool: Pool,
+  input: { readonly workspaceId: WorkspaceId; readonly slug: string; readonly displayName: string },
+): Promise<void> {
+  if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(input.slug)) {
+    throw new TypeError("Invalid workspace slug.");
+  }
+  await withWorkspaceTransaction(
+    pool,
+    input.workspaceId,
+    async (persistence) => {
+      await persistence.provisionWorkspace(input);
+    },
+    { operationName: "workspace.provision" },
+  );
+}
