@@ -1,0 +1,59 @@
+name: Bug report
+description: Report a reproducible problem that is not a vulnerability.
+title: "bug: "
+labels:
+  - "type: bug"
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Do not disclose vulnerabilities, secrets, personal data, portfolio data,
+        or weaponized payloads here. Use private vulnerability reporting.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: v1.0.0 or commit SHA
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment mode
+      options:
+        - Local development
+        - Self-hosted single node
+        - Self-hosted cluster
+        - Hosted service
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Safe minimal reproduction
+      description: Remove sensitive data and use inert fixtures.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Sanitized environment details
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: This report does not disclose a suspected vulnerability or sensitive data.
+          required: true

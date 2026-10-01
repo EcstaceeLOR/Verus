@@ -1,0 +1,9 @@
+# Default ownership. More specific security-sensitive paths follow.
+* @EcstaceeLOR
+
+/.github/ @EcstaceeLOR
+/contracts/ @EcstaceeLOR
+/docs/architecture/ @EcstaceeLOR
+/docs/security/ @EcstaceeLOR
+/deploy/ @EcstaceeLOR
+/SECURITY.md @EcstaceeLOR
