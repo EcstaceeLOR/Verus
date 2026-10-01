@@ -1,0 +1,38 @@
+{
+  "name": "verus",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The context firewall for trading agents",
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@12.8.1",
+  "engines": {
+    "node": ">=24.19.0 <25",
+    "pnpm": "12.8.1"
+  },
+  "scripts": {
+    "build": "node scripts/run-turbo.mjs run build",
+    "check": "corepack pnpm run format:check && corepack pnpm run lint && node scripts/run-turbo.mjs run typecheck test build && corepack pnpm run verify",
+    "dev": "node scripts/run-turbo.mjs run dev",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "infra:down": "docker compose --env-file .env.example -f deploy/compose/compose.yml down",
+    "infra:up": "docker compose --env-file .env.example -f deploy/compose/compose.yml up -d --wait",
+    "lint": "eslint eslint.config.mjs scripts .github/*.mjs docs/**/*.mjs contracts/**/*.mjs && markdownlint-cli2 \"**/*.md\" && node scripts/run-turbo.mjs run lint",
+    "test": "node scripts/run-turbo.mjs run test",
+    "typecheck": "node scripts/run-turbo.mjs run typecheck",
+    "verify": "node scripts/verify-workspace.mjs && node .github/verify-governance.mjs && node docs/architecture/verify-dependencies.mjs && node docs/security/verify-data-handling.mjs && node contracts/v1/verify-canonicalization.mjs && node contracts/v1/verify-policy-vectors.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.6.3",
+    "eslint": "10.11.0",
+    "globals": "17.12.0",
+    "markdownlint-cli2": "0.23.3",
+    "prettier": "3.9.9",
+    "turbo": "2.11.5",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.0",
+    "vitest": "5.0.3"
+  }
+}

@@ -6,9 +6,7 @@
   "identity_state": "verified",
   "source_class": "primary",
   "source_tier": "verified_primary",
-  "canonical_origins": [
-    "https://example.com"
-  ],
+  "canonical_origins": ["https://example.com"],
   "created_at": "2026-10-01T09:00:00Z",
   "updated_at": "2026-10-01T09:20:00Z",
   "extensions": {

@@ -1,0 +1,6 @@
+{
+  "name": "@verus/jobs",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Durable job, lease, retry, and outbox adapters for Verus."
+}

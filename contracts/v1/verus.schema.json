@@ -95,11 +95,26 @@
     },
     "claim": {
       "type": "object",
-      "required": ["claim_id", "kind", "statement", "value", "verification", "confidence_bps", "citations"],
+      "required": [
+        "claim_id",
+        "kind",
+        "statement",
+        "value",
+        "verification",
+        "confidence_bps",
+        "citations"
+      ],
       "properties": {
         "claim_id": { "$ref": "#/$defs/identifier" },
         "kind": {
-          "enum": ["financial_metric", "guidance", "corporate_action", "market_event", "product_announcement", "other"]
+          "enum": [
+            "financial_metric",
+            "guidance",
+            "corporate_action",
+            "market_event",
+            "product_announcement",
+            "other"
+          ]
         },
         "statement": { "type": "string", "minLength": 1, "maxLength": 4096 },
         "value": { "$ref": "#/$defs/claimValue" },
@@ -124,7 +139,18 @@
       "properties": {
         "finding_id": { "$ref": "#/$defs/identifier" },
         "category": {
-          "enum": ["direct_prompt_injection", "indirect_prompt_injection", "obfuscation", "hidden_content", "source_mismatch", "stale_evidence", "contradiction", "parser_risk", "policy_failure", "other"]
+          "enum": [
+            "direct_prompt_injection",
+            "indirect_prompt_injection",
+            "obfuscation",
+            "hidden_content",
+            "source_mismatch",
+            "stale_evidence",
+            "contradiction",
+            "parser_risk",
+            "policy_failure",
+            "other"
+          ]
         },
         "severity": { "enum": ["info", "low", "medium", "high", "critical"] },
         "detector_id": { "type": "string", "minLength": 1, "maxLength": 128 },
@@ -147,7 +173,14 @@
     },
     "evidence": {
       "type": "object",
-      "required": ["evidence_id", "source_id", "snapshot_digest", "identity_state", "retrieved_at", "freshness"],
+      "required": [
+        "evidence_id",
+        "source_id",
+        "snapshot_digest",
+        "identity_state",
+        "retrieved_at",
+        "freshness"
+      ],
       "properties": {
         "evidence_id": { "$ref": "#/$defs/identifier" },
         "source_id": { "$ref": "#/$defs/identifier" },
@@ -222,7 +255,25 @@
     },
     "contextCapsule": {
       "type": "object",
-      "required": ["schema_version", "capsule_id", "workspace_id", "scan_id", "input_digest", "created_at", "as_of", "subject", "claims", "findings", "evidence", "conflicts", "disposition", "policy", "components", "extensions", "signature"],
+      "required": [
+        "schema_version",
+        "capsule_id",
+        "workspace_id",
+        "scan_id",
+        "input_digest",
+        "created_at",
+        "as_of",
+        "subject",
+        "claims",
+        "findings",
+        "evidence",
+        "conflicts",
+        "disposition",
+        "policy",
+        "components",
+        "extensions",
+        "signature"
+      ],
       "properties": {
         "schema_version": { "$ref": "#/$defs/schemaVersion" },
         "capsule_id": { "$ref": "#/$defs/identifier" },
@@ -267,7 +318,14 @@
     },
     "ingestionRequest": {
       "type": "object",
-      "required": ["schema_version", "request_id", "workspace_id", "submitted_at", "input", "extensions"],
+      "required": [
+        "schema_version",
+        "request_id",
+        "workspace_id",
+        "submitted_at",
+        "input",
+        "extensions"
+      ],
       "properties": {
         "schema_version": { "$ref": "#/$defs/schemaVersion" },
         "request_id": { "$ref": "#/$defs/identifier" },
@@ -290,7 +348,9 @@
               "properties": {
                 "kind": { "const": "text" },
                 "text": { "type": "string", "minLength": 1, "maxLength": 1000000 },
-                "media_type": { "enum": ["text/plain", "text/html", "application/xml", "application/json"] }
+                "media_type": {
+                  "enum": ["text/plain", "text/html", "application/xml", "application/json"]
+                }
               },
               "additionalProperties": false
             },
@@ -325,7 +385,17 @@
     },
     "sourceRecord": {
       "type": "object",
-      "required": ["schema_version", "source_id", "kind", "display_name", "identity_state", "canonical_origins", "created_at", "updated_at", "extensions"],
+      "required": [
+        "schema_version",
+        "source_id",
+        "kind",
+        "display_name",
+        "identity_state",
+        "canonical_origins",
+        "created_at",
+        "updated_at",
+        "extensions"
+      ],
       "properties": {
         "schema_version": { "$ref": "#/$defs/schemaVersion" },
         "source_id": { "$ref": "#/$defs/identifier" },
@@ -352,7 +422,17 @@
     },
     "policyVerdict": {
       "type": "object",
-      "required": ["schema_version", "verdict_id", "scan_id", "evaluated_at", "disposition", "policy", "finding_ids", "reason_codes", "extensions"],
+      "required": [
+        "schema_version",
+        "verdict_id",
+        "scan_id",
+        "evaluated_at",
+        "disposition",
+        "policy",
+        "finding_ids",
+        "reason_codes",
+        "extensions"
+      ],
       "properties": {
         "schema_version": { "$ref": "#/$defs/schemaVersion" },
         "verdict_id": { "$ref": "#/$defs/identifier" },

@@ -9,11 +9,7 @@
     "version": "1.2.0",
     "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
   },
-  "finding_ids": [
-    "finding_01ARZ3NDEKTSV4RRFFQ69G5FB1"
-  ],
-  "reason_codes": [
-    "SOURCE_IDENTITY_UNKNOWN"
-  ],
+  "finding_ids": ["finding_01ARZ3NDEKTSV4RRFFQ69G5FB1"],
+  "reason_codes": ["SOURCE_IDENTITY_UNKNOWN"],
   "extensions": {}
 }
