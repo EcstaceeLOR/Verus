@@ -1,6 +1,7 @@
 import { VerusError } from "@verus/domain";
 import type { Pool, PoolClient } from "pg";
 
+import { IdentityPersistence } from "./identity.js";
 import { NOOP_PERSISTENCE_TELEMETRY, type PersistenceTelemetry } from "./telemetry.js";
 
 declare const workspaceIdBrand: unique symbol;
@@ -73,6 +74,10 @@ export class WorkspacePersistence {
   constructor(client: PoolClient, scopedWorkspaceId: WorkspaceId) {
     this.#client = client;
     this.#workspaceId = scopedWorkspaceId;
+  }
+
+  identity(): IdentityPersistence {
+    return new IdentityPersistence(this.#client, this.#workspaceId);
   }
 
   async provisionWorkspace(input: {
@@ -369,6 +374,29 @@ function emitSafely(
   }
 }
 
+function databaseFailure(error: unknown): VerusError {
+  const code =
+    typeof error === "object" && error !== null && "code" in error
+      ? String((error as { code: unknown }).code)
+      : undefined;
+  if (["23000", "23503", "23505"].includes(code ?? "")) {
+    return new VerusError("CONFLICT", "Database invariant rejected the operation.", {
+      cause: error,
+    });
+  }
+  if (code === "42501") {
+    return new VerusError("AUTHORIZATION_DENIED", "Database authorization denied the operation.", {
+      cause: error,
+    });
+  }
+  if (code === "23514") {
+    return new VerusError("CONTRACT_VALIDATION_FAILED", "Database constraint rejected the input.", {
+      cause: error,
+    });
+  }
+  return new VerusError("SERVICE_UNAVAILABLE", "Workspace transaction failed.", { cause: error });
+}
+
 export async function withWorkspaceTransaction<T>(
   pool: Pool,
   scopedWorkspaceId: WorkspaceId,
@@ -411,7 +439,7 @@ export async function withWorkspaceTransaction<T>(
       durationMs: performance.now() - startedAt,
     });
     if (error instanceof VerusError) throw error;
-    throw new VerusError("SERVICE_UNAVAILABLE", "Workspace transaction failed.", { cause: error });
+    throw databaseFailure(error);
   } finally {
     client.release();
   }
@@ -431,5 +459,40 @@ export async function provisionWorkspace(
       await persistence.provisionWorkspace(input);
     },
     { operationName: "workspace.provision" },
+  );
+}
+
+export async function provisionWorkspaceWithOwner(
+  pool: Pool,
+  input: {
+    readonly workspaceId: WorkspaceId;
+    readonly slug: string;
+    readonly displayName: string;
+    readonly identityId: string;
+    readonly provider: string;
+    readonly providerSubjectDigest: string;
+    readonly membershipId: string;
+    readonly auditEventId: string;
+    readonly occurredAt: Date;
+  },
+): Promise<void> {
+  if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(input.slug)) {
+    throw new TypeError("Invalid workspace slug.");
+  }
+  await withWorkspaceTransaction(
+    pool,
+    input.workspaceId,
+    async (persistence) => {
+      await persistence.provisionWorkspace(input);
+      const identity = persistence.identity();
+      const resolvedIdentityId = await identity.resolveIdentity(input);
+      await identity.createOwnerMembership({
+        membershipId: input.membershipId,
+        identityId: resolvedIdentityId,
+        auditEventId: input.auditEventId,
+        occurredAt: input.occurredAt,
+      });
+    },
+    { isolation: "serializable", operationName: "workspace.provision_with_owner" },
   );
 }

@@ -8,3 +8,7 @@ queries. SQL predicates and forced PostgreSQL row-level security both enforce th
 
 Run migrations with `pnpm --filter @verus/persistence migrate`. See the
 [database runbook](../../docs/operations/database.md) before deploying or rolling back a schema.
+
+Identity records contain provider and email digests rather than raw identifiers. Membership,
+invitation, service-account, and session lifecycle rules are documented in
+[identity and authorization](../../docs/security/authorization.md).

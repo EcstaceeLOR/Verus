@@ -16,6 +16,10 @@ import {
 const connectionString = process.env.DATABASE_URL;
 if (connectionString === undefined)
   throw new Error("DATABASE_URL is required for integration tests.");
+const databaseName = new URL(connectionString).pathname.slice(1);
+if (!databaseName.endsWith("_test")) {
+  throw new Error("Integration tests require a disposable database whose name ends in _test.");
+}
 
 const adminPool = new Pool({ connectionString, max: 4 });
 let appPool: Pool | undefined;
@@ -35,13 +39,11 @@ function testMigration(version: number, up: string, down: string): Migration {
 
 describe("PostgreSQL persistence", () => {
   beforeAll(async () => {
-    const existingMigrations = await loadMigrations();
-    for (const migration of [...existingMigrations].reverse()) {
-      await adminPool.query(migration.down);
-    }
-    await adminPool.query("DROP TABLE IF EXISTS verus_schema_migrations CASCADE");
     await adminPool.query("DROP OWNED BY verus_test_app").catch(() => undefined);
     await adminPool.query("DROP ROLE IF EXISTS verus_test_app");
+    await adminPool.query("DROP SCHEMA public CASCADE");
+    await adminPool.query("CREATE SCHEMA public");
+    await adminPool.query("GRANT USAGE ON SCHEMA public TO PUBLIC");
   });
 
   afterAll(async () => {
@@ -61,18 +63,19 @@ describe("PostgreSQL persistence", () => {
         },
       },
     });
-    expect(fresh).toMatchObject({ fromVersion: 0, toVersion: 1, appliedVersions: [1] });
+    expect(fresh).toMatchObject({ fromVersion: 0, toVersion: 2, appliedVersions: [1, 2] });
 
     const existing = await migrate(adminPool);
-    expect(existing).toMatchObject({ fromVersion: 1, toVersion: 1, appliedVersions: [] });
+    expect(existing).toMatchObject({ fromVersion: 2, toVersion: 2, appliedVersions: [] });
 
     const tables = await adminPool.query<{ table_name: string }>(
       `SELECT table_name FROM information_schema.tables
        WHERE table_schema = 'public' AND table_name IN
          ('workspaces', 'scans', 'policies', 'findings', 'evidence_records',
-          'jobs', 'key_metadata', 'audit_events', 'outbox_events')`,
+          'jobs', 'key_metadata', 'audit_events', 'outbox_events', 'identities',
+          'memberships', 'invitations', 'service_accounts', 'authorization_sessions')`,
     );
-    expect(tables.rows).toHaveLength(9);
+    expect(tables.rows).toHaveLength(14);
     const forced = await adminPool.query<{ relforcerowsecurity: boolean; relrowsecurity: boolean }>(
       `SELECT relrowsecurity, relforcerowsecurity FROM pg_class
        WHERE relname = 'scans'`,
@@ -82,30 +85,34 @@ describe("PostgreSQL persistence", () => {
 
   it("rolls back an interrupted migration and recovers on retry", async () => {
     const base = await loadMigrations();
+    const interruptedVersion = (base.at(-1)?.version ?? 0) + 1;
     const broken = testMigration(
-      2,
+      interruptedVersion,
       "CREATE TABLE interrupted_marker (id integer); SELECT definitely_not_a_function();",
       "DROP TABLE IF EXISTS interrupted_marker;",
     );
     await expect(
-      migrate(adminPool, { targetVersion: 2, migrations: [...base, broken] }),
-    ).rejects.toThrow("Migration 2 up failed");
+      migrate(adminPool, { targetVersion: interruptedVersion, migrations: [...base, broken] }),
+    ).rejects.toThrow(`Migration ${interruptedVersion} up failed`);
     const absent = await adminPool.query<{ present: null | string }>(
       "SELECT to_regclass('public.interrupted_marker') AS present",
     );
     expect(absent.rows[0]?.present).toBeNull();
 
     const repaired = testMigration(
-      2,
+      interruptedVersion,
       "CREATE TABLE interrupted_marker (id integer PRIMARY KEY);",
       "DROP TABLE IF EXISTS interrupted_marker;",
     );
     await expect(
-      migrate(adminPool, { targetVersion: 2, migrations: [...base, repaired] }),
-    ).resolves.toMatchObject({ toVersion: 2, appliedVersions: [2] });
+      migrate(adminPool, { targetVersion: interruptedVersion, migrations: [...base, repaired] }),
+    ).resolves.toMatchObject({
+      toVersion: interruptedVersion,
+      appliedVersions: [interruptedVersion],
+    });
     await expect(
-      migrate(adminPool, { targetVersion: 1, migrations: [...base, repaired] }),
-    ).resolves.toMatchObject({ toVersion: 1, appliedVersions: [2] });
+      migrate(adminPool, { targetVersion: 2, migrations: [...base, repaired] }),
+    ).resolves.toMatchObject({ toVersion: 2, appliedVersions: [interruptedVersion] });
   });
 
   it("enforces tenant scope in both repositories and PostgreSQL RLS", async () => {
@@ -113,6 +120,10 @@ describe("PostgreSQL persistence", () => {
     await adminPool.query("GRANT USAGE ON SCHEMA public TO verus_test_app");
     await adminPool.query(
       "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO verus_test_app",
+    );
+    await adminPool.query("REVOKE INSERT, UPDATE, DELETE ON identities FROM verus_test_app");
+    await adminPool.query(
+      "GRANT EXECUTE ON FUNCTION verus_resolve_identity(text, text, text) TO verus_test_app",
     );
     const appUrl = new URL(connectionString);
     appUrl.username = "verus_test_app";
@@ -202,13 +213,148 @@ describe("PostgreSQL persistence", () => {
     ).rejects.toMatchObject({ code: "CONFLICT" } satisfies Partial<VerusError>);
   });
 
+  it("enforces membership, invitation, session, and service-account lifecycles", async () => {
+    if (appPool === undefined) throw new Error("Application pool was not initialized.");
+    const digest = (character: string): string => `sha256:${character.repeat(64)}`;
+    const ownerIdentityId = "user_01ARZ3NDEKTSV4RRFFQ69G5FB1";
+    const ownerMembershipId = "member_01ARZ3NDEKTSV4RRFFQ69G5FB2";
+    const ownerSessionId = "session_01ARZ3NDEKTSV4RRFFQ69G5FB3";
+    const invitedIdentityId = "user_01ARZ3NDEKTSV4RRFFQ69G5FB4";
+    const invitedMembershipId = "member_01ARZ3NDEKTSV4RRFFQ69G5FB5";
+    const invitedSessionId = "session_01ARZ3NDEKTSV4RRFFQ69G5FB6";
+    const serviceAccountId = "svc_01ARZ3NDEKTSV4RRFFQ69G5FB7";
+    const serviceSessionId = "session_01ARZ3NDEKTSV4RRFFQ69G5FB8";
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    const occurredAt = new Date("2026-10-01T01:00:00.000Z");
+
+    await withWorkspaceTransaction(appPool, workspaceA, async (store) => {
+      const identity = store.identity();
+      const resolved = await identity.resolveIdentity({
+        identityId: ownerIdentityId,
+        provider: "oidc",
+        providerSubjectDigest: digest("1"),
+      });
+      await identity.createOwnerMembership({
+        membershipId: ownerMembershipId,
+        identityId: resolved,
+        auditEventId: "event_01ARZ3NDEKTSV4RRFFQ69G5FB9",
+        occurredAt,
+      });
+      await identity.createHumanSession({
+        sessionId: ownerSessionId,
+        identityId: ownerIdentityId,
+        provider: "oidc",
+        providerSubjectDigest: digest("1"),
+        expiresAt,
+      });
+      await identity.createInvitation({
+        actorSessionId: ownerSessionId,
+        invitationId: "invite_01ARZ3NDEKTSV4RRFFQ69G5FBA",
+        emailDigest: digest("2"),
+        tokenDigest: digest("3"),
+        role: "reviewer",
+        expiresAt,
+        auditEventId: "event_01ARZ3NDEKTSV4RRFFQ69G5FBB",
+        occurredAt,
+      });
+    });
+
+    await withWorkspaceTransaction(appPool, workspaceA, async (store) => {
+      const identity = store.identity();
+      await identity.acceptInvitation({
+        invitationId: "invite_01ARZ3NDEKTSV4RRFFQ69G5FBA",
+        tokenDigest: digest("3"),
+        emailDigest: digest("2"),
+        identityId: invitedIdentityId,
+        provider: "oidc",
+        providerSubjectDigest: digest("4"),
+        membershipId: invitedMembershipId,
+        auditEventId: "event_01ARZ3NDEKTSV4RRFFQ69G5FBC",
+        occurredAt,
+      });
+      await identity.createHumanSession({
+        sessionId: invitedSessionId,
+        identityId: invitedIdentityId,
+        provider: "oidc",
+        providerSubjectDigest: digest("4"),
+        expiresAt,
+      });
+      await identity.createServiceAccount({
+        actorSessionId: ownerSessionId,
+        serviceAccountId,
+        displayName: "Scanner",
+        role: "scan_worker",
+        auditEventId: "event_01ARZ3NDEKTSV4RRFFQ69G5FBD",
+        occurredAt,
+      });
+      await identity.createServiceSession({
+        sessionId: serviceSessionId,
+        serviceAccountId,
+        expiresAt,
+      });
+    });
+
+    await expect(
+      withWorkspaceTransaction(appPool, workspaceB, (store) =>
+        store.identity().resolveHumanGrant(ownerSessionId),
+      ),
+    ).resolves.toBeUndefined();
+    await expect(appPool.query("INSERT INTO identities DEFAULT VALUES")).rejects.toMatchObject({
+      code: "42501",
+    });
+
+    await withWorkspaceTransaction(appPool, workspaceA, async (store) => {
+      const identity = store.identity();
+      await identity.changeMembership({
+        actorSessionId: ownerSessionId,
+        membershipId: invitedMembershipId,
+        role: "analyst",
+        status: "active",
+        auditEventId: "event_01ARZ3NDEKTSV4RRFFQ69G5FBE",
+        occurredAt,
+      });
+      expect(await identity.resolveHumanGrant(invitedSessionId)).toBeUndefined();
+      await identity.changeServiceAccount({
+        actorSessionId: ownerSessionId,
+        serviceAccountId,
+        role: "audit_exporter",
+        status: "suspended",
+        auditEventId: "event_01ARZ3NDEKTSV4RRFFQ69G5FBF",
+        occurredAt,
+      });
+      expect(await identity.resolveServiceGrant(serviceSessionId)).toBeUndefined();
+    });
+
+    await expect(
+      withWorkspaceTransaction(appPool, workspaceA, (store) =>
+        store.identity().changeMembership({
+          actorSessionId: ownerSessionId,
+          membershipId: ownerMembershipId,
+          role: "admin",
+          status: "active",
+          auditEventId: "event_01ARZ3NDEKTSV4RRFFQ69G5FBG",
+          occurredAt,
+        }),
+      ),
+    ).rejects.toMatchObject({ code: "CONFLICT" } satisfies Partial<VerusError>);
+
+    const audited = await adminPool.query<{ count: string }>(
+      `SELECT count(*) FROM audit_events
+       WHERE workspace_id = $1 AND action IN
+         ('membership.invited', 'membership.invitation_accepted', 'membership.changed',
+          'service_account.created', 'service_account.changed')`,
+      [workspaceA],
+    );
+    expect(audited.rows[0]?.count).toBe("5");
+  });
+
   it("supports a full rollback and clean re-application", async () => {
     if (appPool === undefined) throw new Error("Application pool was not initialized.");
     await appPool.end();
     appPool = undefined;
     const down = await migrate(adminPool, { targetVersion: 0 });
-    expect(down).toMatchObject({ fromVersion: 1, toVersion: 0, appliedVersions: [1] });
+    expect(down).toMatchObject({ fromVersion: 2, toVersion: 0, appliedVersions: [2, 1] });
     const up = await migrate(adminPool);
-    expect(up).toMatchObject({ fromVersion: 0, toVersion: 1, appliedVersions: [1] });
+    expect(up).toMatchObject({ fromVersion: 0, toVersion: 2, appliedVersions: [1, 2] });
   });
 });

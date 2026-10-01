@@ -10,3 +10,19 @@ export {
   type ProblemDetails,
   type PublicContractIssue,
 } from "./errors.js";
+export {
+  AUTHORIZATION_ACTIONS,
+  HUMAN_ROLES,
+  SERVICE_ROLES,
+  assertAuthorized,
+  isAuthorized,
+  permissionsForRole,
+  type AuthorizationAction,
+  type AuthorizationDecisionEvent,
+  type AuthorizationGrant,
+  type AuthorizationReason,
+  type AuthorizationTelemetry,
+  type GrantStatus,
+  type HumanRole,
+  type ServiceRole,
+} from "./authorization.js";

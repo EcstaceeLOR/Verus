@@ -1,0 +1,15 @@
+DROP TRIGGER IF EXISTS service_accounts_revoke_changed_grants ON service_accounts;
+DROP TRIGGER IF EXISTS service_accounts_guard ON service_accounts;
+DROP TRIGGER IF EXISTS memberships_revoke_changed_grants ON memberships;
+DROP TRIGGER IF EXISTS memberships_guard_delete ON memberships;
+DROP TRIGGER IF EXISTS memberships_guard_update ON memberships;
+DROP FUNCTION IF EXISTS verus_revoke_changed_grants();
+DROP FUNCTION IF EXISTS verus_service_account_guard();
+DROP FUNCTION IF EXISTS verus_membership_guard();
+DROP FUNCTION IF EXISTS verus_resolve_identity(text, text, text);
+DROP POLICY IF EXISTS identity_workspace_read ON identities;
+DROP TABLE IF EXISTS authorization_sessions;
+DROP TABLE IF EXISTS service_accounts;
+DROP TABLE IF EXISTS invitations;
+DROP TABLE IF EXISTS memberships;
+DROP TABLE IF EXISTS identities;

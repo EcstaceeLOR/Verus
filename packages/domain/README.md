@@ -9,3 +9,6 @@ they enter domain logic.
 
 See [domain contract boundaries](../../docs/development/domain-contracts.md) for construction,
 version-negotiation, error, and rollout rules.
+
+The package also owns the provider-neutral, fail-closed RBAC policy. See
+[identity and authorization](../../docs/security/authorization.md) for role and session semantics.
