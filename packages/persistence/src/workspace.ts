@@ -225,6 +225,47 @@ export class WorkspacePersistence {
     );
   }
 
+  async createContentSnapshot(input: {
+    readonly snapshotId: string;
+    readonly scanId: string;
+    readonly contentDigest: string;
+    readonly metadataDigest: string;
+    readonly objectRef: string;
+    readonly retrievalMetadata: Readonly<Record<string, unknown>>;
+    readonly parentDigests: readonly string[];
+    readonly componentVersions: Readonly<Record<string, string>>;
+    readonly retentionUntil: Date;
+  }): Promise<void> {
+    await this.#client.query(
+      `INSERT INTO content_snapshots
+        (workspace_id, snapshot_id, scan_id, content_digest, metadata_digest, object_ref,
+         retrieval_metadata, parent_digests, component_versions, retention_until)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        this.#workspaceId,
+        input.snapshotId,
+        input.scanId,
+        input.contentDigest,
+        input.metadataDigest,
+        input.objectRef,
+        input.retrievalMetadata,
+        input.parentDigests,
+        input.componentVersions,
+        input.retentionUntil,
+      ],
+    );
+  }
+
+  async markContentSnapshotDeleted(snapshotId: string, deletedAt: Date): Promise<void> {
+    const result = await this.#client.query(
+      `UPDATE content_snapshots SET content_deleted_at = $3
+       WHERE workspace_id = $1 AND snapshot_id = $2 AND content_deleted_at IS NULL`,
+      [this.#workspaceId, snapshotId, deletedAt],
+    );
+    if (result.rowCount !== 1)
+      throw new VerusError("NOT_FOUND", "Snapshot does not exist or was deleted.");
+  }
+
   async transitionScan(input: {
     readonly scanId: string;
     readonly expectedVersion: number;

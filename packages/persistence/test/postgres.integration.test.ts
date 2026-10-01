@@ -65,12 +65,12 @@ describe("PostgreSQL persistence", () => {
     });
     expect(fresh).toMatchObject({
       fromVersion: 0,
-      toVersion: 7,
-      appliedVersions: [1, 2, 3, 4, 5, 6, 7],
+      toVersion: 8,
+      appliedVersions: [1, 2, 3, 4, 5, 6, 7, 8],
     });
 
     const existing = await migrate(adminPool);
-    expect(existing).toMatchObject({ fromVersion: 7, toVersion: 7, appliedVersions: [] });
+    expect(existing).toMatchObject({ fromVersion: 8, toVersion: 8, appliedVersions: [] });
 
     const tables = await adminPool.query<{ table_name: string }>(
       `SELECT table_name FROM information_schema.tables
@@ -79,9 +79,9 @@ describe("PostgreSQL persistence", () => {
           'jobs', 'key_metadata', 'audit_events', 'outbox_events', 'identities',
           'memberships', 'invitations', 'service_accounts', 'authorization_sessions',
           'api_keys', 'secret_metadata', 'job_attempts', 'job_results', 'ingestion_envelopes',
-          'quarantine_uploads')`,
+          'quarantine_uploads', 'content_snapshots')`,
     );
-    expect(tables.rows).toHaveLength(20);
+    expect(tables.rows).toHaveLength(21);
     const forced = await adminPool.query<{ relforcerowsecurity: boolean; relrowsecurity: boolean }>(
       `SELECT relrowsecurity, relforcerowsecurity FROM pg_class
        WHERE relname = 'scans'`,
@@ -118,7 +118,7 @@ describe("PostgreSQL persistence", () => {
     });
     await expect(
       migrate(adminPool, { targetVersion: 6, migrations: [...base, repaired] }),
-    ).resolves.toMatchObject({ toVersion: 6, appliedVersions: [interruptedVersion, 7] });
+    ).resolves.toMatchObject({ toVersion: 6, appliedVersions: [interruptedVersion, 8, 7] });
   });
 
   it("enforces tenant scope in both repositories and PostgreSQL RLS", async () => {
@@ -490,8 +490,8 @@ describe("PostgreSQL persistence", () => {
     const up = await migrate(adminPool);
     expect(up).toMatchObject({
       fromVersion: 0,
-      toVersion: 7,
-      appliedVersions: [1, 2, 3, 4, 5, 6, 7],
+      toVersion: 8,
+      appliedVersions: [1, 2, 3, 4, 5, 6, 7, 8],
     });
   });
 });
