@@ -56,3 +56,6 @@ migration.
   conflict and must reload; it must not retry a state decision blindly.
 - Write an outbox event in the same transaction as any state change that requires downstream work.
 - Store identifiers and safe error codes in operational telemetry, never tenant content or secrets.
+
+Job leases, retries, and dead-letter recovery have additional operational requirements in the
+[durable jobs runbook](./durable-jobs.md).

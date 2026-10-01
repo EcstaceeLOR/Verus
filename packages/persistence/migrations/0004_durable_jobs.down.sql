@@ -1,0 +1,33 @@
+DROP TRIGGER IF EXISTS jobs_validate_transition ON jobs;
+DROP FUNCTION IF EXISTS verus_validate_job_transition();
+DROP TABLE IF EXISTS job_results;
+DROP TABLE IF EXISTS job_attempts;
+DROP INDEX IF EXISTS jobs_dead_letter_idx;
+DROP INDEX IF EXISTS jobs_lease_expiry_idx;
+DROP INDEX IF EXISTS jobs_queue_claim_idx;
+ALTER TABLE jobs
+  DROP CONSTRAINT IF EXISTS jobs_error_code_known,
+  DROP CONSTRAINT IF EXISTS jobs_error_pair,
+  DROP CONSTRAINT IF EXISTS jobs_result_digest_format,
+  DROP CONSTRAINT IF EXISTS jobs_result_pair,
+  DROP CONSTRAINT IF EXISTS jobs_terminal_timestamp,
+  DROP CONSTRAINT IF EXISTS jobs_lease_invariant,
+  DROP CONSTRAINT IF EXISTS jobs_effect_key_format,
+  DROP CONSTRAINT IF EXISTS jobs_timeout_range,
+  DROP CONSTRAINT IF EXISTS jobs_envelope_version_range,
+  DROP CONSTRAINT IF EXISTS jobs_kind_format,
+  DROP CONSTRAINT IF EXISTS jobs_queue_name_format,
+  DROP CONSTRAINT IF EXISTS jobs_replayed_from_fk,
+  DROP COLUMN IF EXISTS replayed_from_job_id,
+  DROP COLUMN IF EXISTS last_error_retryable,
+  DROP COLUMN IF EXISTS result_digest,
+  DROP COLUMN IF EXISTS result_ref,
+  DROP COLUMN IF EXISTS completed_at,
+  DROP COLUMN IF EXISTS cancel_requested_at,
+  DROP COLUMN IF EXISTS execution_expires_at,
+  DROP COLUMN IF EXISTS lease_token,
+  DROP COLUMN IF EXISTS effect_key,
+  DROP COLUMN IF EXISTS deadline_at,
+  DROP COLUMN IF EXISTS timeout_ms,
+  DROP COLUMN IF EXISTS envelope_version,
+  DROP COLUMN IF EXISTS queue_name;

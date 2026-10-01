@@ -2,5 +2,29 @@
   "name": "@verus/jobs",
   "version": "0.0.0",
   "private": true,
-  "description": "Durable job, lease, retry, and outbox adapters for Verus."
+  "description": "Durable job, lease, retry, and outbox adapters for Verus.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint src test",
+    "test": "vitest run --exclude test/postgres.integration.test.ts",
+    "test:integration": "vitest run test/postgres.integration.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@verus/domain": "workspace:^",
+    "pg": "8.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/pg": "8.23.0",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
 }
