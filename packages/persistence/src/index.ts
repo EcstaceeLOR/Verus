@@ -5,6 +5,7 @@ export {
   type Migration,
   type MigrationResult,
 } from "./migrations.js";
+export { IdentityPersistence } from "./identity.js";
 export {
   NOOP_PERSISTENCE_TELEMETRY,
   type PersistenceEvent,
@@ -15,6 +16,7 @@ export {
   WorkspacePersistence,
   canTransitionScan,
   provisionWorkspace,
+  provisionWorkspaceWithOwner,
   withWorkspaceTransaction,
   workspaceId,
   type ScanRecord,
