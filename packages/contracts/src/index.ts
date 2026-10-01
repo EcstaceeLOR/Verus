@@ -8,3 +8,23 @@ export const contractSchemaIds = Object.freeze({
 });
 
 export type VerusSchemaVersion = typeof VERUS_SCHEMA_VERSION;
+
+export {
+  ContractValidationError,
+  UnsupportedContractVersionError,
+  type ContractIssue,
+} from "./errors.js";
+export {
+  parseContextCapsule,
+  parseIngestionRequest,
+  parsePolicyVerdict,
+  parseSourceRecord,
+} from "./validation.js";
+export {
+  SUPPORTED_CONTRACT_VERSIONS,
+  assertSupportedContractVersion,
+  isSupportedContractVersion,
+  negotiateContractVersion,
+  type SupportedContractVersion,
+} from "./version.js";
+export type * from "./types.js";
