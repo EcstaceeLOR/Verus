@@ -8,6 +8,7 @@ import {
   type WorkspaceRole,
 } from "./console-state.js";
 import { ScanWorkspace } from "./ScanWorkspace.js";
+import { ReviewWorkspace } from "./ReviewWorkspace.js";
 import { statusCopy, type ConnectionState } from "./status.js";
 
 const navigation: readonly { readonly id: ConsoleView; readonly label: string }[] = [
@@ -238,6 +239,8 @@ export function App() {
           </div>
         ) : view === "scans" ? (
           <ScanWorkspace />
+        ) : view === "evidence" ? (
+          <ReviewWorkspace />
         ) : (
           <section className="panel empty-state" aria-labelledby="empty-heading">
             <p className="eyebrow">{view}</p>
