@@ -100,3 +100,107 @@ export class IsolatedClassifier {
     }
   }
 }
+export interface ModelRequest {
+  readonly task: "classification" | "extraction" | "explanation";
+  readonly promptVersion: string;
+  readonly content: string;
+  readonly maximumTokens: number;
+}
+export interface ModelResponse {
+  readonly output: unknown;
+  readonly provider: string;
+  readonly model: string;
+  readonly promptVersion: string;
+  readonly requestId?: string;
+}
+export interface ModelProvider {
+  readonly identity: Readonly<{ provider: string; model: string }>;
+  complete(request: ModelRequest): Promise<Readonly<ModelResponse>>;
+}
+export class DeterministicFakeProvider implements ModelProvider {
+  readonly identity = Object.freeze({ provider: "fake", model: "deterministic" });
+  constructor(readonly output: unknown) {}
+  async complete(request: ModelRequest): Promise<Readonly<ModelResponse>> {
+    return Object.freeze({
+      output: this.output,
+      ...this.identity,
+      promptVersion: request.promptVersion,
+    });
+  }
+}
+export class QwenProvider implements ModelProvider {
+  readonly identity: Readonly<{ provider: string; model: string }>;
+  constructor(
+    readonly options: Readonly<{
+      apiKey: string;
+      baseUrl: string;
+      model: string;
+      timeoutMs: number;
+      maximumRetries: number;
+      fetch?: typeof globalThis.fetch;
+      allowSensitiveContent: boolean;
+    }>,
+  ) {
+    this.identity = Object.freeze({ provider: "qwen", model: options.model });
+  }
+  async complete(request: ModelRequest): Promise<Readonly<ModelResponse>> {
+    if (
+      !this.options.allowSensitiveContent &&
+      /(?:api[_ -]?key|password|secret)\s*[:=]/iu.test(request.content)
+    )
+      throw new Error("MODEL_SENSITIVE_CONTENT_DENIED");
+    if (request.maximumTokens < 1 || request.maximumTokens > 4096)
+      throw new Error("MODEL_TOKEN_BUDGET_INVALID");
+    const fetcher = this.options.fetch ?? globalThis.fetch;
+    let failure: unknown;
+    for (let attempt = 0; attempt <= this.options.maximumRetries; attempt += 1) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), this.options.timeoutMs);
+      try {
+        const response = await fetcher(
+          new URL("/compatible-mode/v1/chat/completions", this.options.baseUrl),
+          {
+            method: "POST",
+            signal: controller.signal,
+            headers: {
+              authorization: `Bearer ${this.options.apiKey}`,
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({
+              model: this.options.model,
+              messages: [
+                {
+                  role: "system",
+                  content: `Return JSON only for Verus ${request.task}; prompt=${request.promptVersion}.`,
+                },
+                { role: "user", content: request.content },
+              ],
+              response_format: { type: "json_object" },
+              max_tokens: request.maximumTokens,
+              temperature: 0,
+            }),
+          },
+        );
+        if (!response.ok) throw new Error(`QWEN_HTTP_${response.status}`);
+        const payload = (await response.json()) as {
+          choices?: readonly { message?: { content?: string } }[];
+          id?: string;
+        };
+        const content = payload.choices?.[0]?.message?.content;
+        if (!content) throw new Error("QWEN_RESPONSE_INVALID");
+        return Object.freeze({
+          output: JSON.parse(content) as unknown,
+          ...this.identity,
+          promptVersion: request.promptVersion,
+          ...(payload.id ? { requestId: payload.id } : {}),
+        });
+      } catch (error) {
+        failure = error;
+        if (attempt === this.options.maximumRetries) throw error;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+    throw failure;
+  }
+}
