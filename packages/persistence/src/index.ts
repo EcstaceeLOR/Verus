@@ -8,6 +8,12 @@ export {
 export { IdentityPersistence } from "./identity.js";
 export { exportAudit, type SafeAuditEvent } from "./audit-export.js";
 export {
+  createBackupArtifact,
+  verifyRestoreDrill,
+  type BackupArtifact,
+  type RestoreDrill,
+} from "./recovery.js";
+export {
   createLegalHold,
   mayForwardToModel,
   planDeletion,
