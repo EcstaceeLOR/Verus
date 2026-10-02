@@ -191,6 +191,8 @@ export class FileSystemCapsuleStore implements CapsuleStore, CapsuleAuditSink {
   }
 }
 
+export { composeContextCapsule, type ProcessedFinding, type ProcessedScan } from "./composer.js";
+
 function omitSignature(capsule: ContextCapsule): UnsignedCapsule {
   return Object.fromEntries(
     Object.entries(capsule).filter(([key]) => key !== "signature"),
