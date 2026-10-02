@@ -1,4 +1,5 @@
 # TypeScript SDK
 
-Issue #40 implements the public client after the REST contract is stable. No mock transport is
-published from the workspace bootstrap.
+`VerusClient` provides typed scan, status, capsule, pagination, retry, and offline signature
+verification workflows. The `verus` CLI emits JSON only and reads its API URL, bearer key, and
+workspace from environment variables; it never prints bearer material.
