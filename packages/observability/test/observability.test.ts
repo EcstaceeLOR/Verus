@@ -7,6 +7,8 @@ import {
   childContext,
   contextFromHeaders,
   currentTelemetryContext,
+  diagnoseCorrelation,
+  evaluateOperationalAlerts,
   parseTraceparent,
   propagationHeaders,
   runWithTelemetryContext,
@@ -142,5 +144,58 @@ describe("safe metrics", () => {
     expect(() =>
       metrics.increment("verus_failures_total", { component: "worker", tenant_id: "tenant-a" }),
     ).toThrow("fixed definition");
+  });
+});
+
+describe("operational alerting and diagnosis", () => {
+  it("pages actionable aggregate failures while suppressing planned-maintenance burn noise", () => {
+    const alerts = evaluateOperationalAlerts({
+      availabilityBurnRate1h: 15,
+      availabilityBurnRate3d: 1.1,
+      availabilityBurnRate6h: 7,
+      auditCommitHealthy: false,
+      deadLetterGrowthPerHour: 10,
+      maintenanceActive: true,
+      oldestReadyAgeSeconds: 301,
+      telemetryAgeSeconds: 301,
+    });
+    expect(alerts).toEqual([
+      expect.objectContaining({
+        id: "audit_commit_failed",
+        owner: "security-on-call",
+        severity: "page",
+      }),
+      expect.objectContaining({
+        id: "dead_letter_growth",
+        owner: "platform-on-call",
+        severity: "page",
+      }),
+      expect.objectContaining({ id: "queue_backlog", owner: "platform-on-call", severity: "page" }),
+      expect.objectContaining({
+        id: "telemetry_stale",
+        owner: "platform-on-call",
+        severity: "page",
+      }),
+    ]);
+    expect(alerts.every((item) => item.runbook.startsWith("docs/operations/"))).toBe(true);
+  });
+
+  it("diagnoses a flow with correlation only and rejects unsafe identifiers", () => {
+    expect(
+      diagnoseCorrelation("corr_safe_123456", [
+        { stage: "api", outcome: "success" },
+        { stage: "queue", outcome: "success" },
+        { stage: "worker", outcome: "failure" },
+      ]),
+    ).toEqual({ correlationId: "corr_safe_123456", complete: true, terminalStage: "worker" });
+    expect(() =>
+      diagnoseCorrelation("scan unsafe", [{ stage: "api", outcome: "success" }]),
+    ).toThrow("Invalid correlation ID");
+    expect(() =>
+      diagnoseCorrelation("corr_safe_123456", [
+        { stage: "api", outcome: "success" },
+        { stage: "api", outcome: "failure" },
+      ]),
+    ).toThrow("unique and allowlisted");
   });
 });
