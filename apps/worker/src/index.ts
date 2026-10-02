@@ -3,6 +3,8 @@ import type { SignedScanProcessingService } from "@verus/ingestion";
 import { contextFromHeaders, runWithTelemetryContext } from "@verus/observability";
 import type { StructuredLogger } from "@verus/observability";
 
+export { parseWorkerRuntimeConfig, type WorkerRuntimeConfig } from "./config.js";
+
 export type JobExecutionOutcome =
   | Readonly<{ kind: "completed"; resultDigest: string; resultRef: string }>
   | Readonly<{ errorCode: JobFailureCode; kind: "failed"; retryable: boolean }>;
