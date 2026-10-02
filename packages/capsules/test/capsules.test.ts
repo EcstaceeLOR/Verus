@@ -42,9 +42,10 @@ async function setup() {
 }
 function unsignedFixture(): Omit<ContextCapsule, "signature"> {
   const capsule = parseContextCapsule(fixture);
-  return Object.fromEntries(
-    Object.entries(capsule).filter(([key]) => key !== "signature"),
-  ) as Omit<ContextCapsule, "signature">;
+  return Object.fromEntries(Object.entries(capsule).filter(([key]) => key !== "signature")) as Omit<
+    ContextCapsule,
+    "signature"
+  >;
 }
 describe("Context Capsules", () => {
   it("signs, stores, verifies offline, and preserves an append-only audit trail", async () => {
