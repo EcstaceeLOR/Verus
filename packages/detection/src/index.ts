@@ -4,6 +4,7 @@ export * from "./representation.js";
 
 export const DETECTOR_RULESET_SCHEMA_VERSION = "1.0" as const;
 export type DetectionDisposition = "allow" | "review" | "block";
+export * from "./attack-lab.js";
 export type DetectionSeverity = "low" | "medium" | "high" | "critical";
 export type RuleReasonCode =
   | "DIRECT_INSTRUCTION_OVERRIDE"
