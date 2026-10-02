@@ -1,4 +1,5 @@
 export type Disposition = "allow" | "review" | "block";
+export * from "./review.js";
 type Input = Readonly<{
   policyAvailable: boolean;
   controls: readonly {
