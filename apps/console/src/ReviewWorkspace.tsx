@@ -1,14 +1,13 @@
 import { useState } from "react";
 import { safeFinding, type SafeFinding } from "./review-state.js";
-const sample: readonly SafeFinding[] = [
-  safeFinding({
-    id: "finding_example",
-    category: "hidden_content",
-    severity: "high",
-    location: "Document offset 184",
-    reason: "HIDDEN_CONTENT_DETECTED",
-  })!,
-];
+const example = safeFinding({
+  id: "finding_example",
+  category: "hidden_content",
+  severity: "high",
+  location: "Document offset 184",
+  reason: "HIDDEN_CONTENT_DETECTED",
+});
+const sample: readonly SafeFinding[] = example === undefined ? [] : [example];
 export function ReviewWorkspace() {
   const [findings] = useState(sample);
   return (
