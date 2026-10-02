@@ -11,6 +11,7 @@ export * from "./sec.js";
 export * from "./issuer.js";
 export * from "./bitget.js";
 export * from "./claims.js";
+export * from "./verify.js";
 export interface SourceObservation {
   readonly requestedUrl: string;
   readonly finalUrl: string;
