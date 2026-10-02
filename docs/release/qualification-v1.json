@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "releaseCandidate": "v1",
+  "requiredEvidence": [
+    {
+      "id": "W1",
+      "evidence": [
+        "packages/ingestion/test/ingestion.test.ts",
+        "packages/capsules/test/capsules.test.ts",
+        "apps/api/test/public-api.test.ts"
+      ]
+    },
+    {
+      "id": "W2",
+      "evidence": ["packages/policy/test/queue.test.ts", "apps/console/src/review-state.test.ts"]
+    },
+    {
+      "id": "W3",
+      "evidence": ["packages/policy/test/lifecycle.test.ts", "docs/security/policy-semantics.md"]
+    },
+    {
+      "id": "W4",
+      "evidence": [
+        "packages/provenance/test/provenance.test.ts",
+        "packages/persistence/test/audit-export.test.ts"
+      ]
+    },
+    {
+      "id": "W5",
+      "evidence": [
+        "packages/persistence/test/postgres.integration.test.ts",
+        "packages/crypto/test/crypto.test.ts"
+      ]
+    },
+    {
+      "id": "W6",
+      "evidence": [
+        "packages/persistence/test/postgres.integration.test.ts",
+        "packages/persistence/test/recovery.test.ts",
+        "deploy/README.md"
+      ]
+    },
+    { "id": "SEC-01", "evidence": ["services/retriever/test/retriever.test.ts"] },
+    {
+      "id": "SEC-02",
+      "evidence": [
+        "services/parser/test/document.test.ts",
+        "packages/quarantine/test/quarantine.test.ts"
+      ]
+    },
+    {
+      "id": "SEC-05",
+      "evidence": [
+        "packages/persistence/test/postgres.integration.test.ts",
+        "apps/api/test/public-api.test.ts"
+      ]
+    },
+    {
+      "id": "SEC-08",
+      "evidence": ["scripts/generate-release-evidence.mjs", "scripts/verify-release-evidence.mjs"]
+    },
+    {
+      "id": "PRIV-02",
+      "evidence": [
+        "packages/persistence/test/lifecycle.test.ts",
+        "docs/security/source-evidence-data-classification.md"
+      ]
+    },
+    {
+      "id": "OPS-01",
+      "evidence": ["packages/jobs/test/state.test.ts", "apps/worker/test/worker.test.ts"]
+    },
+    {
+      "id": "OPS-05",
+      "evidence": ["packages/persistence/test/recovery.test.ts", "docs/operations/recovery.md"]
+    },
+    {
+      "id": "OPS-06",
+      "evidence": [
+        "packages/observability/test/reliability.test.ts",
+        "docs/operations/capacity-and-resilience.md"
+      ]
+    },
+    {
+      "id": "UX-05",
+      "evidence": ["apps/console/src/review-state.test.ts", "docs/security/threat-model.md"]
+    }
+  ]
+}
