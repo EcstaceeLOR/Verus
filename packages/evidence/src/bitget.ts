@@ -30,10 +30,10 @@ export class BitgetEvidenceConnector {
       const data = JSON.parse(response.body) as Record<string, string>;
       return Object.freeze({
         id,
-        versionDigest: data.digest,
-        publishedAt: data.publishedAt,
-        updatedAt: data.updatedAt,
-        title: data.title,
+        versionDigest: data.digest ?? "",
+        publishedAt: data.publishedAt ?? "",
+        updatedAt: data.updatedAt ?? "",
+        title: data.title ?? "",
         freshness: "current",
       });
     } catch {
