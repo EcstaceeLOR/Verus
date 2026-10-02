@@ -2,10 +2,10 @@ import { randomBytes } from "node:crypto";
 
 import { buildCapsule, composeContextCapsule } from "@verus/capsules";
 import type {
-  type CapsuleAuditSink,
-  type CapsuleSigningKey,
-  type ProcessedFinding,
-  type ProcessedScan as CapsuleProcessedScan,
+  CapsuleAuditSink,
+  CapsuleSigningKey,
+  ProcessedFinding,
+  ProcessedScan as CapsuleProcessedScan,
 } from "@verus/capsules";
 import { canonicalizeJson, sha256Digest } from "@verus/crypto";
 import type { Ed25519SigningProvider } from "@verus/crypto";
