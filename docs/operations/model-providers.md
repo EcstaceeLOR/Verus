@@ -12,3 +12,7 @@ explicitly enabled for an approved provider deployment.
 Self-hosted deployments can substitute any `ModelProvider`; `DeterministicFakeProvider` exists for
 repeatable tests and no-network validation. Roll back by selecting the prior provider/model/prompt
 configuration; stored decisions retain their recorded versions.
+
+Provider forwarding uses the privacy lifecycle policy: secret assets never leave Verus, while
+confidential and restricted data require active workspace consent for the approved provider
+configuration. Withdrawing consent stops future forwarding and does not extend retained data.

@@ -8,6 +8,14 @@ export {
 export { IdentityPersistence } from "./identity.js";
 export { exportAudit, type SafeAuditEvent } from "./audit-export.js";
 export {
+  createLegalHold,
+  mayForwardToModel,
+  planDeletion,
+  scheduleRetention,
+  type DataAsset,
+  type LegalHold,
+} from "./lifecycle.js";
+export {
   CredentialPersistence,
   type DiscoverableSigningKey,
   type StoredApiKey,
