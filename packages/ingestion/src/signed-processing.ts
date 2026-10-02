@@ -1,18 +1,18 @@
 import { randomBytes } from "node:crypto";
 
-import {
-  buildCapsule,
-  composeContextCapsule,
+import { buildCapsule, composeContextCapsule } from "@verus/capsules";
+import type {
   type CapsuleAuditSink,
   type CapsuleSigningKey,
   type ProcessedFinding,
   type ProcessedScan as CapsuleProcessedScan,
 } from "@verus/capsules";
-import { canonicalizeJson, sha256Digest, type Ed25519SigningProvider } from "@verus/crypto";
+import { canonicalizeJson, sha256Digest } from "@verus/crypto";
+import type { Ed25519SigningProvider } from "@verus/crypto";
 import { withWorkspaceTransaction, workspaceId } from "@verus/persistence";
 import type { Pool } from "pg";
 
-import { ScanProcessingService } from "./processing.js";
+import type { ScanProcessingService } from "./processing.js";
 
 const alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 const componentDigest = sha256Digest(new TextEncoder().encode("verus-processing/1"));
