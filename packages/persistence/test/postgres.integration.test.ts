@@ -221,6 +221,46 @@ describe("PostgreSQL persistence", () => {
     ).rejects.toMatchObject({ code: "CONFLICT" } satisfies Partial<VerusError>);
   });
 
+  it("returns public read models only from the scoped workspace", async () => {
+    if (appPool === undefined) throw new Error("Application pool was not initialized.");
+    await withWorkspaceTransaction(appPool, workspaceA, async (store) => {
+      await store.insertFinding({
+        findingId: "finding_01ARZ3NDEKTSV4RRFFQ69G5FB1",
+        scanId,
+        category: "prompt_injection",
+        severity: "high",
+        detectorId: "detector.rule.v1",
+        reasonCode: "INDIRECT_INSTRUCTION_DETECTED",
+        confidenceBps: 9400,
+        location: { representation: "canonical", text_start: 0, text_end: 12 },
+      });
+      await store.insertEvidence({
+        evidenceId: "evidence_01ARZ3NDEKTSV4RRFFQ69G5FB2",
+        scanId,
+        sourceId: "source_01ARZ3NDEKTSV4RRFFQ69G5FB3",
+        snapshotDigest: `sha256:${"a".repeat(64)}`,
+        identityState: "verified",
+        freshness: "current",
+        retrievedAt: new Date("2026-10-01T00:05:00.000Z"),
+      });
+      expect(await store.findScan(scanId)).toMatchObject({ scanId, state: "queued" });
+      expect(await store.listScans({ limit: 1 })).toMatchObject({
+        items: [expect.objectContaining({ scanId })],
+      });
+      expect(await store.listFindings(scanId)).toMatchObject([
+        expect.objectContaining({ findingId: "finding_01ARZ3NDEKTSV4RRFFQ69G5FB1" }),
+      ]);
+      expect(await store.listEvidence(scanId)).toMatchObject([
+        expect.objectContaining({ evidenceId: "evidence_01ARZ3NDEKTSV4RRFFQ69G5FB2" }),
+      ]);
+    });
+    await withWorkspaceTransaction(appPool, workspaceB, async (store) => {
+      expect(await store.findScan(scanId)).toBeUndefined();
+      expect(await store.listFindings(scanId)).toEqual([]);
+      expect(await store.listEvidence(scanId)).toEqual([]);
+    });
+  });
+
   it("enforces membership, invitation, session, and service-account lifecycles", async () => {
     if (appPool === undefined) throw new Error("Application pool was not initialized.");
     const digest = (character: string): string => `sha256:${character.repeat(64)}`;

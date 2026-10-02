@@ -24,6 +24,26 @@ export interface ScanRecord {
   readonly updatedAt: Date;
 }
 
+export interface FindingRecord {
+  readonly category: string;
+  readonly confidenceBps: number | undefined;
+  readonly createdAt: Date;
+  readonly detectorId: string;
+  readonly findingId: string;
+  readonly location: Readonly<Record<string, unknown>>;
+  readonly reasonCode: string;
+  readonly severity: string;
+}
+
+export interface EvidenceRecord {
+  readonly evidenceId: string;
+  readonly freshness: string;
+  readonly identityState: string;
+  readonly retrievedAt: Date;
+  readonly snapshotDigest: string;
+  readonly sourceId: string;
+}
+
 const WORKSPACE_ID_PATTERN = /^ws_[0-9A-HJKMNP-TV-Z]{26}$/;
 const transitions = Object.freeze({
   accepted: ["queued", "cancelled"],
@@ -59,6 +79,26 @@ interface ScanRow {
   workspace_id: WorkspaceId;
 }
 
+interface FindingRow {
+  category: string;
+  confidence_bps: number | null;
+  created_at: Date;
+  detector_id: string;
+  finding_id: string;
+  location: Record<string, unknown>;
+  reason_code: string;
+  severity: string;
+}
+
+interface EvidenceRow {
+  evidence_id: string;
+  freshness: string;
+  identity_state: string;
+  retrieved_at: Date;
+  snapshot_digest: string;
+  source_id: string;
+}
+
 function toScan(row: ScanRow): Readonly<ScanRecord> {
   return Object.freeze({
     workspaceId: row.workspace_id,
@@ -71,6 +111,30 @@ function toScan(row: ScanRow): Readonly<ScanRecord> {
     stateVersion: Number(row.state_version),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  });
+}
+
+function toFinding(row: FindingRow): Readonly<FindingRecord> {
+  return Object.freeze({
+    category: row.category,
+    confidenceBps: row.confidence_bps ?? undefined,
+    createdAt: row.created_at,
+    detectorId: row.detector_id,
+    findingId: row.finding_id,
+    location: Object.freeze({ ...row.location }),
+    reasonCode: row.reason_code,
+    severity: row.severity,
+  });
+}
+
+function toEvidence(row: EvidenceRow): Readonly<EvidenceRecord> {
+  return Object.freeze({
+    evidenceId: row.evidence_id,
+    freshness: row.freshness,
+    identityState: row.identity_state,
+    retrievedAt: row.retrieved_at,
+    snapshotDigest: row.snapshot_digest,
+    sourceId: row.source_id,
   });
 }
 
@@ -177,6 +241,60 @@ export class WorkspacePersistence {
     const row = result.rows[0];
     if (row === undefined) throw new VerusError("NOT_FOUND", "Scan does not exist.");
     return toScan(row);
+  }
+
+  async findScan(scanId: string): Promise<Readonly<ScanRecord> | undefined> {
+    const result = await this.#client.query<ScanRow>(
+      `SELECT workspace_id, scan_id, request_id, input_digest, idempotency_key, request_digest, state, state_version,
+              created_at, updated_at
+       FROM scans WHERE workspace_id = $1 AND scan_id = $2`,
+      [this.#workspaceId, scanId],
+    );
+    const row = result.rows[0];
+    return row === undefined ? undefined : toScan(row);
+  }
+
+  /** Lists scans using an opaque scan-id cursor, always scoped by the transaction tenant. */
+  async listScans(input: {
+    readonly after?: string;
+    readonly limit: number;
+  }): Promise<Readonly<{ items: readonly Readonly<ScanRecord>[]; next?: string }>> {
+    const result = await this.#client.query<ScanRow>(
+      `SELECT workspace_id, scan_id, request_id, input_digest, idempotency_key, request_digest, state, state_version,
+              created_at, updated_at
+       FROM scans
+       WHERE workspace_id = $1 AND ($2::text IS NULL OR scan_id > $2)
+       ORDER BY scan_id ASC
+       LIMIT $3`,
+      [this.#workspaceId, input.after ?? null, input.limit + 1],
+    );
+    const hasMore = result.rows.length > input.limit;
+    const rows = result.rows.slice(0, input.limit).map(toScan);
+    const last = rows.at(-1);
+    return Object.freeze({
+      items: Object.freeze(rows),
+      ...(hasMore && last !== undefined ? { next: last.scanId } : {}),
+    });
+  }
+
+  async listFindings(scanId: string): Promise<readonly Readonly<FindingRecord>[]> {
+    const result = await this.#client.query<FindingRow>(
+      `SELECT finding_id, category, severity, detector_id, reason_code, confidence_bps, location, created_at
+       FROM findings WHERE workspace_id = $1 AND scan_id = $2
+       ORDER BY created_at ASC, finding_id ASC`,
+      [this.#workspaceId, scanId],
+    );
+    return Object.freeze(result.rows.map(toFinding));
+  }
+
+  async listEvidence(scanId: string): Promise<readonly Readonly<EvidenceRecord>[]> {
+    const result = await this.#client.query<EvidenceRow>(
+      `SELECT evidence_id, source_id, snapshot_digest, identity_state, freshness, retrieved_at
+       FROM evidence_records WHERE workspace_id = $1 AND scan_id = $2
+       ORDER BY retrieved_at ASC, evidence_id ASC`,
+      [this.#workspaceId, scanId],
+    );
+    return Object.freeze(result.rows.map(toEvidence));
   }
 
   async getScanByIdempotencyKey(idempotencyKey: string): Promise<Readonly<ScanRecord> | undefined> {

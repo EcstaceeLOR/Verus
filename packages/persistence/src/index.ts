@@ -40,6 +40,8 @@ export {
   withWorkspaceTransaction,
   workspaceId,
   type ScanRecord,
+  type FindingRecord,
+  type EvidenceRecord,
   type ScanState,
   type WorkspaceId,
 } from "./workspace.js";

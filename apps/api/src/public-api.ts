@@ -29,11 +29,11 @@ export interface PublicApiData {
   getFindings(
     workspaceId: string,
     scanId: string,
-  ): Promise<readonly Readonly<Record<string, unknown>>[]>;
+  ): Promise<readonly Readonly<Record<string, unknown>>[] | undefined>;
   getEvidence(
     workspaceId: string,
     scanId: string,
-  ): Promise<readonly Readonly<Record<string, unknown>>[]>;
+  ): Promise<readonly Readonly<Record<string, unknown>>[] | undefined>;
   getCapsule(
     workspaceId: string,
     scanId: string,
@@ -127,13 +127,17 @@ export function createPublicApiHandler(
           correlation_id: context.correlationId,
         });
       } else if (match[2] === "findings") {
+        const findings = await input.data.getFindings(principal.workspaceId, scanId);
+        if (findings === undefined) throw new VerusError("NOT_FOUND", "Record does not exist.");
         json(response, 200, {
-          data: (await input.data.getFindings(principal.workspaceId, scanId)).map(safeRecord),
+          data: findings.map(safeRecord),
           correlation_id: context.correlationId,
         });
       } else if (match[2] === "evidence") {
+        const evidence = await input.data.getEvidence(principal.workspaceId, scanId);
+        if (evidence === undefined) throw new VerusError("NOT_FOUND", "Record does not exist.");
         json(response, 200, {
-          data: (await input.data.getEvidence(principal.workspaceId, scanId)).map(safeRecord),
+          data: evidence.map(safeRecord),
           correlation_id: context.correlationId,
         });
       } else {

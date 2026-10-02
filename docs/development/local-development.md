@@ -46,6 +46,15 @@ corepack pnpm infra:up
 The Compose profile consumes `.env.example`. Copy it to an ignored local file only when you need
 overrides; never put production secrets in either file.
 
+## Authenticated API reads
+
+The versioned `GET /v1/scans` API is disabled until both `DATABASE_URL` and `VERUS_API_KEY_PEPPER`
+are configured. The pepper must be a 32-byte secret encoded as unpadded base64url. It verifies
+API-key HMACs and must be supplied through a secret manager in deployed environments.
+`VERUS_PUBLIC_API_KEY_LIMIT`, `VERUS_PUBLIC_API_WORKSPACE_LIMIT`, and
+`VERUS_PUBLIC_API_WINDOW_SECONDS` set the local process limits; clustered deployments require a
+shared admission-control implementation before production use.
+
 ## Common commands
 
 | Command                      | Purpose                                               |
