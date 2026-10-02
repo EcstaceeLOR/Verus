@@ -576,6 +576,18 @@ importers:
         specifier: 'catalog:'
         version: 5.0.3(@types/node@26.6.3)(@vitest/coverage-v8@5.0.3)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(tsx@4.23.15))
 
+  packages/webhooks:
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.3
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@types/node@26.6.3)(@vitest/coverage-v8@5.0.3)(vite@8.3.1(@types/node@26.6.3)(esbuild@0.28.2)(tsx@4.23.15))
+
   services/model-gateway:
     devDependencies:
       '@types/node':
