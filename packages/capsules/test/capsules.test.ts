@@ -3,6 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { parseContextCapsule, type ContextCapsule } from "@verus/contracts";
 import {
   Ed25519SigningProvider,
   SealedFileSecretProvider,
@@ -39,12 +40,17 @@ async function setup() {
     store: new FileSystemCapsuleStore(root),
   };
 }
+function unsignedFixture(): Omit<ContextCapsule, "signature"> {
+  const capsule = parseContextCapsule(fixture);
+  return Object.fromEntries(
+    Object.entries(capsule).filter(([key]) => key !== "signature"),
+  ) as Omit<ContextCapsule, "signature">;
+}
 describe("Context Capsules", () => {
   it("signs, stores, verifies offline, and preserves an append-only audit trail", async () => {
     const setupResult = await setup();
     try {
-      const unsigned = structuredClone(fixture);
-      delete unsigned.signature;
+      const unsigned = unsignedFixture();
       const capsule = await buildCapsule({
         capsule: unsigned,
         approval: {
@@ -68,8 +74,7 @@ describe("Context Capsules", () => {
   it("rejects tampering and explains model-provider replay limitations", async () => {
     const setupResult = await setup();
     try {
-      const unsigned = structuredClone(fixture);
-      delete unsigned.signature;
+      const unsigned = unsignedFixture();
       const capsule = await buildCapsule({
         capsule: unsigned,
         approval: {
