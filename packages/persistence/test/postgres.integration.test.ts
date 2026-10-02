@@ -1,8 +1,11 @@
 import { createHash } from "node:crypto";
 
+import { parseContextCapsule } from "@verus/contracts";
 import type { VerusError } from "@verus/domain";
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import capsuleFixture from "../../../contracts/v1/fixtures/valid/context-capsule.json" with { type: "json" };
 
 import {
   loadMigrations,
@@ -65,12 +68,12 @@ describe("PostgreSQL persistence", () => {
     });
     expect(fresh).toMatchObject({
       fromVersion: 0,
-      toVersion: 8,
-      appliedVersions: [1, 2, 3, 4, 5, 6, 7, 8],
+      toVersion: 9,
+      appliedVersions: [1, 2, 3, 4, 5, 6, 7, 8, 9],
     });
 
     const existing = await migrate(adminPool);
-    expect(existing).toMatchObject({ fromVersion: 8, toVersion: 8, appliedVersions: [] });
+    expect(existing).toMatchObject({ fromVersion: 9, toVersion: 9, appliedVersions: [] });
 
     const tables = await adminPool.query<{ table_name: string }>(
       `SELECT table_name FROM information_schema.tables
@@ -79,9 +82,9 @@ describe("PostgreSQL persistence", () => {
           'jobs', 'key_metadata', 'audit_events', 'outbox_events', 'identities',
           'memberships', 'invitations', 'service_accounts', 'authorization_sessions',
           'api_keys', 'secret_metadata', 'job_attempts', 'job_results', 'ingestion_envelopes',
-          'quarantine_uploads', 'content_snapshots')`,
+          'quarantine_uploads', 'content_snapshots', 'context_capsules')`,
     );
-    expect(tables.rows).toHaveLength(21);
+    expect(tables.rows).toHaveLength(22);
     const forced = await adminPool.query<{ relforcerowsecurity: boolean; relrowsecurity: boolean }>(
       `SELECT relrowsecurity, relforcerowsecurity FROM pg_class
        WHERE relname = 'scans'`,
@@ -258,6 +261,27 @@ describe("PostgreSQL persistence", () => {
       expect(await store.findScan(scanId)).toBeUndefined();
       expect(await store.listFindings(scanId)).toEqual([]);
       expect(await store.listEvidence(scanId)).toEqual([]);
+    });
+  });
+
+  it("stores a signed Context Capsule once per scan and preserves tenant isolation", async () => {
+    if (appPool === undefined) throw new Error("Application pool was not initialized.");
+    const capsule = parseContextCapsule({
+      ...capsuleFixture,
+      input_digest: `sha256:${"0".repeat(64)}`,
+      scan_id: scanId,
+      workspace_id: workspaceA,
+    });
+    await withWorkspaceTransaction(appPool, workspaceA, async (store) => {
+      await store.storeContextCapsule(capsule);
+      await store.storeContextCapsule(capsule);
+      expect(await store.getContextCapsule(scanId)).toMatchObject({
+        capsule_id: capsule.capsule_id,
+        scan_id: scanId,
+      });
+    });
+    await withWorkspaceTransaction(appPool, workspaceB, async (store) => {
+      expect(await store.getContextCapsule(scanId)).toBeUndefined();
     });
   });
 
@@ -530,8 +554,8 @@ describe("PostgreSQL persistence", () => {
     const up = await migrate(adminPool);
     expect(up).toMatchObject({
       fromVersion: 0,
-      toVersion: 8,
-      appliedVersions: [1, 2, 3, 4, 5, 6, 7, 8],
+      toVersion: 9,
+      appliedVersions: [1, 2, 3, 4, 5, 6, 7, 8, 9],
     });
   });
 });
