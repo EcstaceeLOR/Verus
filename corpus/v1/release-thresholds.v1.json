@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "version": "v1",
+  "approval_required_to_lower": true,
+  "minimums": {
+    "attack_block_rate_bps": 8000,
+    "benign_false_positive_bps": 1000,
+    "per_category_recall_bps": 7000,
+    "deterministic_latency_ms_p95": 100
+  }
+}
