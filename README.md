@@ -11,9 +11,9 @@ sources, stale claims, malformed content, or contradictory data. A conventional 
 happens after the model has already reasoned over that material. Verus protects the earlier
 boundary: what the model is allowed to see and trust.
 
-> **Status:** Verus is in active pre-release development. The public interfaces and security
-> contracts are being specified before implementation. It is not yet suitable for live trading or
-> production security decisions.
+> **Status:** Verus is a security control in active pre-release qualification. Do not use it for
+> live trading or as the sole security decision-maker until your deployment has completed its
+> documented staging, recovery, security-review, and release gates.
 
 ## Quick start
 
@@ -170,19 +170,15 @@ direction, storage, execution, and supported deployment topologies.
 
 ## Product surfaces
 
-The production release is planned to provide:
+The implemented product surfaces are documented at [docs/README.md](docs/README.md):
 
-- a scanning and Context Capsule REST API;
-- an MCP server for agent-native integration;
-- a CLI for local scanning, verification, and automation;
-- a TypeScript SDK;
-- a web console for scans, evidence, policies, and audit records;
-- connectors for authoritative financial sources;
-- read-only portfolio impact mapping;
-- webhook delivery for verdicts and source-health events; and
-- a public red-team benchmark and reproducible evaluation harness.
+- a versioned REST API and signed Context Capsule contract;
+- an MCP server, TypeScript SDK, and JSON-only CLI;
+- a low-information web console for scans and review;
+- vetted evidence connectors, read-only Bitget portfolio context, and webhooks; and
+- reproducible policy, corpus, release, recovery, and operational controls.
 
-These interfaces will share the same policy engine and versioned contracts so a scan has equivalent
+These interfaces share the same policy engine and versioned contracts so a scan has equivalent
 semantics across local, hosted, and agent integrations.
 
 ## Initial scope
