@@ -8,6 +8,7 @@ export interface SourceRecord {
   readonly reviewState: "approved" | "revoked";
 }
 export * from "./sec.js";
+export * from "./issuer.js";
 export interface SourceObservation {
   readonly requestedUrl: string;
   readonly finalUrl: string;
