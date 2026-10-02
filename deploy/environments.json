@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "environments": {
+    "preview": {
+      "branchPolicy": "pull-request",
+      "approvalRequired": false,
+      "isolated": true,
+      "replicas": 1,
+      "dataRetentionDays": 7
+    },
+    "staging": {
+      "branchPolicy": "main",
+      "approvalRequired": false,
+      "isolated": true,
+      "replicas": 1,
+      "dataRetentionDays": 30
+    },
+    "production": {
+      "branchPolicy": "main",
+      "approvalRequired": true,
+      "isolated": true,
+      "replicas": 2,
+      "dataRetentionDays": 365
+    }
+  },
+  "resources": {
+    "compute": ["api", "console", "worker", "retriever", "parser", "model-gateway"],
+    "network": {
+      "public": ["console", "api"],
+      "private": [
+        "worker",
+        "retriever",
+        "parser",
+        "model-gateway",
+        "postgres",
+        "queue",
+        "object-store"
+      ],
+      "egressDenied": ["parser"]
+    },
+    "state": ["postgres", "queue", "object-store"],
+    "edge": ["dns", "tls", "cdn"],
+    "secrets": {
+      "provider": "external-secret-manager",
+      "applicationReadOnly": true,
+      "migrationIdentitySeparate": true
+    }
+  }
+}
