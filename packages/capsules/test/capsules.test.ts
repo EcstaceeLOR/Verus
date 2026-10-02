@@ -12,6 +12,7 @@ import {
 } from "@verus/crypto";
 import {
   buildCapsule,
+  composeContextCapsule,
   FileSystemCapsuleStore,
   replayCapsule,
   verifyCapsule,
@@ -48,6 +49,56 @@ function unsignedFixture(): Omit<ContextCapsule, "signature"> {
   >;
 }
 describe("Context Capsules", () => {
+  it("composes a signed, raw-content-free capsule from a completed scan", async () => {
+    const setupResult = await setup();
+    try {
+      const capsule = await composeContextCapsule({
+        capsuleId: "cap_01ARZ3NDEKTSV4RRFFQ69G5FB5",
+        scan: {
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          inputDigest: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          scanId: "scan_01ARZ3NDEKTSV4RRFFQ69G5FB5",
+          state: "blocked",
+          workspaceId: "ws_01ARZ3NDEKTSV4RRFFQ69G5FB5",
+        },
+        findings: [
+          {
+            category: "prompt_injection",
+            confidenceBps: 9800,
+            detectorId: "detector.rules.v1",
+            findingId: "finding_01ARZ3NDEKTSV4RRFFQ69G5FB5",
+            location: { representation: "raw", text_start: 0, text_end: 12 },
+            reasonCode: "DIRECT_INSTRUCTION_OVERRIDE",
+            severity: "critical",
+          },
+        ],
+        policy: {
+          policy_id: "policy_01ARZ3NDEKTSV4RRFFQ69G5FB5",
+          version: "1.0.0",
+          digest: "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        },
+        component: {
+          component: "verus-processing",
+          version: "1.0.0",
+          digest: "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        },
+        key: setupResult.key,
+        signer: setupResult.signer,
+        audit: setupResult.store,
+        build: buildCapsule,
+      });
+      expect(capsule.disposition).toBe("block");
+      expect(capsule.findings[0]).toMatchObject({ category: "direct_prompt_injection" });
+      expect(capsule.claims).toEqual([]);
+      expect(capsule.evidence).toEqual([]);
+      await expect(
+        verifyCapsule({ capsule, keys: [setupResult.key], audit: setupResult.store }),
+      ).resolves.toMatchObject({ valid: true });
+    } finally {
+      setupResult.secrets.destroy();
+      setupResult.master.destroy();
+    }
+  }, 20_000);
   it("signs, stores, verifies offline, and preserves an append-only audit trail", async () => {
     const setupResult = await setup();
     try {
