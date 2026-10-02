@@ -7,3 +7,4 @@ export {
   type CapsuleSignRequest,
   type PublicSigningKey,
 } from "./signing.js";
+export { canonicalizeJson, sha256Digest } from "./canonical.js";
