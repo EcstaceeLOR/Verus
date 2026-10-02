@@ -121,7 +121,14 @@ describe("PostgreSQL persistence", () => {
     });
     await expect(
       migrate(adminPool, { targetVersion: 6, migrations: [...base, repaired] }),
-    ).resolves.toMatchObject({ toVersion: 6, appliedVersions: [interruptedVersion, 8, 7] });
+    ).resolves.toMatchObject({
+      toVersion: 6,
+      appliedVersions: [interruptedVersion, 9, 8, 7],
+    });
+    await expect(migrate(adminPool)).resolves.toMatchObject({
+      toVersion: 9,
+      appliedVersions: [7, 8, 9],
+    });
   });
 
   it("enforces tenant scope in both repositories and PostgreSQL RLS", async () => {
