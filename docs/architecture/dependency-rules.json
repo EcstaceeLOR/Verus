@@ -66,6 +66,7 @@
     ["testkit", "contracts"],
     ["testkit", "domain"],
     ["api", "contracts"],
+    ["api", "crypto"],
     ["api", "domain"],
     ["api", "persistence"],
     ["api", "jobs"],
