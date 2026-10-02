@@ -16,6 +16,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@verus/capsules": "workspace:^",
+    "@verus/crypto": "workspace:^",
     "@verus/contracts": "workspace:^",
     "@verus/detection": "workspace:^",
     "@verus/domain": "workspace:^",

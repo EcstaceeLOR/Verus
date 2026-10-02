@@ -149,3 +149,4 @@ export class IngestionService {
 }
 export { limits as INGESTION_LIMITS };
 export { ScanProcessingService, type ProcessedScan } from "./processing.js";
+export { SignedScanProcessingService } from "./signed-processing.js";
