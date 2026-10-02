@@ -3,6 +3,8 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { toProblemDetails, VerusError, type AuthorizationAction } from "@verus/domain";
 import type { TelemetryContext } from "@verus/observability";
 
+import type { TenantAdmission } from "./tenancy.js";
+
 export interface ApiPrincipal {
   readonly workspaceId: string;
   readonly keyId: string;
@@ -72,6 +74,7 @@ function safeRecord(value: Readonly<Record<string, unknown>>): Readonly<Record<s
 export function createPublicApiHandler(
   input: Readonly<{
     authenticator: ApiAuthenticator;
+    admission?: TenantAdmission;
     data: PublicApiData;
     limiter: ApiRateLimiter;
   }>,
@@ -98,6 +101,15 @@ export function createPublicApiHandler(
               ? "capsule.read"
               : "scan.read";
       const principal = await input.authenticator.authenticate(request, action);
+      const admitted = await input.admission?.admit(principal);
+      if (admitted !== undefined && !admitted.allowed) {
+        if (admitted.reason === "quota")
+          response.setHeader("retry-after", String(admitted.retryAfterSeconds ?? 1));
+        throw new VerusError(
+          admitted.reason === "quota" ? "RATE_LIMITED" : "AUTHORIZATION_DENIED",
+          "Request is unavailable.",
+        );
+      }
       const rate = await input.limiter.check(principal);
       if (!rate.allowed) {
         response.setHeader("retry-after", String(rate.retryAfterSeconds ?? 1));

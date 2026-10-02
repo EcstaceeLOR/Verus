@@ -10,7 +10,12 @@ export interface ApiKeyLookup {
     workspaceId: string,
     keyId: string,
   ): Promise<
-    | Readonly<{ keyId: string; verifier: string; scopes: readonly AuthorizationAction[] }>
+    | Readonly<{
+        keyId: string;
+        verifier: string;
+        scopes: readonly AuthorizationAction[];
+        workspaceStatus?: "active" | "suspended" | "deleting";
+      }>
     | undefined
   >;
   recordUse(workspaceId: string, keyId: string): Promise<void>;
@@ -42,6 +47,8 @@ export class ApiKeyAuthenticator implements ApiAuthenticator {
     const key = await this.lookup.find(workspaceId, keyId);
     if (!key || !verifyApiKey(token, key, this.pepper))
       throw new VerusError("AUTHENTICATION_REQUIRED", "API key is invalid or unavailable.");
+    if (key.workspaceStatus !== undefined && key.workspaceStatus !== "active")
+      throw new VerusError("AUTHORIZATION_DENIED", "API key is unavailable.");
     if (!key.scopes.includes(action))
       throw new VerusError("AUTHORIZATION_DENIED", "API key does not have the required scope.");
     await this.lookup.recordUse(workspaceId, key.keyId);
