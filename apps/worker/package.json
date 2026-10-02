@@ -17,6 +17,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@verus/ingestion": "workspace:^",
     "@verus/jobs": "workspace:^",
     "@verus/observability": "workspace:^"
   },

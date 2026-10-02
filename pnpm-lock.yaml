@@ -310,6 +310,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@verus/ingestion':
+        specifier: workspace:^
+        version: link:../../packages/ingestion
       '@verus/jobs':
         specifier: workspace:^
         version: link:../../packages/jobs

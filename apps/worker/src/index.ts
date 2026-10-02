@@ -1,4 +1,5 @@
 import type { ClaimedJob, JobFailureCode } from "@verus/jobs";
+import type { SignedScanProcessingService } from "@verus/ingestion";
 import { contextFromHeaders, runWithTelemetryContext } from "@verus/observability";
 import type { StructuredLogger } from "@verus/observability";
 
@@ -60,6 +61,13 @@ export function createScanProcessHandler(
       return { kind: "failed", errorCode: "JOB_DEPENDENCY_UNAVAILABLE", retryable: true };
     }
   };
+}
+
+/** Binds the production signed processor to the durable scan job contract. */
+export function createSignedScanProcessHandler(
+  processor: SignedScanProcessingService,
+): (job: ClaimedJob) => Promise<JobExecutionOutcome> {
+  return createScanProcessHandler(processor);
 }
 
 export async function executeClaimedJob(
