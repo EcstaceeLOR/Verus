@@ -101,9 +101,8 @@ export class PostgresPublicApiData implements ApiKeyLookup, PublicApiData {
     });
   }
 
-  /** Capsules fail closed until their signed records are durably persisted with the scan. */
-  async getCapsule() {
-    return undefined;
+  async getCapsule(workspace: string, scanId: string) {
+    return this.#within(workspace, async (store) => store.getContextCapsule(scanId));
   }
 
   async #within<T>(

@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@verus/contracts": "workspace:^",
+    "@verus/crypto": "workspace:^",
     "@verus/domain": "workspace:^",
     "pg": "8.23.0"
   },

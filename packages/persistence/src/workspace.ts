@@ -1,3 +1,5 @@
+import { parseContextCapsule, type ContextCapsule } from "@verus/contracts";
+import { canonicalizeJson, sha256Digest } from "@verus/crypto";
 import { VerusError } from "@verus/domain";
 import type { Pool, PoolClient } from "pg";
 
@@ -335,6 +337,56 @@ export class WorkspacePersistence {
           inputKind: row.input_kind,
           provenance: Object.freeze({ ...row.provenance }),
         });
+  }
+
+  /** Stores one signed, contract-valid capsule for a scan; an exact replay is idempotent. */
+  async storeContextCapsule(capsule: ContextCapsule): Promise<void> {
+    const validated = parseContextCapsule(capsule);
+    if (validated.workspace_id !== this.#workspaceId)
+      throw new VerusError(
+        "AUTHORIZATION_DENIED",
+        "Capsule tenant does not match the transaction.",
+      );
+    const digest = sha256Digest(canonicalizeJson(validated));
+    const inserted = await this.#client.query<{ capsule_digest: string }>(
+      `INSERT INTO context_capsules
+         (workspace_id, capsule_id, scan_id, capsule_digest, signing_key_id, capsule)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (workspace_id, scan_id) DO NOTHING
+       RETURNING capsule_digest`,
+      [
+        this.#workspaceId,
+        validated.capsule_id,
+        validated.scan_id,
+        digest,
+        validated.signature.key_id,
+        validated,
+      ],
+    );
+    if (inserted.rows[0] !== undefined) return;
+    const existing = await this.#client.query<{ capsule_digest: string }>(
+      "SELECT capsule_digest FROM context_capsules WHERE workspace_id = $1 AND scan_id = $2",
+      [this.#workspaceId, validated.scan_id],
+    );
+    if (existing.rows[0]?.capsule_digest !== digest)
+      throw new VerusError("CONFLICT", "Scan already has a different Context Capsule.");
+  }
+
+  async getContextCapsule(scanId: string): Promise<Readonly<ContextCapsule> | undefined> {
+    const result = await this.#client.query<{
+      capsule: ContextCapsule;
+      capsule_digest: string;
+    }>(
+      `SELECT capsule, capsule_digest FROM context_capsules
+       WHERE workspace_id = $1 AND scan_id = $2`,
+      [this.#workspaceId, scanId],
+    );
+    const row = result.rows[0];
+    if (row === undefined) return undefined;
+    const capsule = parseContextCapsule(row.capsule);
+    if (sha256Digest(canonicalizeJson(capsule)) !== row.capsule_digest)
+      throw new VerusError("SERVICE_UNAVAILABLE", "Stored Context Capsule integrity check failed.");
+    return capsule;
   }
 
   async createIngestionEnvelope(input: {
