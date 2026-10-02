@@ -17,6 +17,7 @@ const expected = new Map([
   ["@verus/detection", "packages/detection"],
   ["@verus/evidence", "packages/evidence"],
   ["@verus/bitget", "packages/bitget"],
+  ["@verus/webhooks", "packages/webhooks"],
   ["@verus/capsules", "packages/capsules"],
   ["@verus/crypto", "packages/crypto"],
   ["@verus/persistence", "packages/persistence"],
