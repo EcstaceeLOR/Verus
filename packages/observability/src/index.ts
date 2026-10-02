@@ -28,3 +28,11 @@ export {
   type OperationalAlert,
   type OperationalSnapshot,
 } from "./alerts.js";
+export {
+  assessCapacity,
+  nextDependencyState,
+  type AdmissionOutcome,
+  type CapacityBudget,
+  type CapacitySnapshot,
+  type DependencyState,
+} from "./reliability.js";
