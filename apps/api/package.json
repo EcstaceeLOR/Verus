@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@verus/domain": "workspace:^",
+    "@verus/crypto": "workspace:^",
     "@verus/ingestion": "workspace:^",
     "@verus/observability": "workspace:^",
     "@verus/persistence": "workspace:^",

@@ -1,0 +1,55 @@
+openapi: 3.1.0
+info:
+  title: Verus API
+  version: 1.0.0
+  description:
+    Versioned, authenticated Context Firewall API. Source bytes are never returned by default.
+paths:
+  /v1/scans:
+    get:
+      summary: List scans
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100, default: 25 },
+          }
+        - { name: after, in: query, schema: { type: string } }
+      responses:
+        {
+          "200": { description: Derived scan records only },
+          "400": { description: Invalid pagination },
+          "401": { description: Authentication required },
+          "429": { description: Rate limited },
+        }
+  /v1/scans/{scan_id}:
+    get:
+      {
+        summary: Read scan status,
+        security: [{ bearerAuth: [] }],
+        responses: { "200": { description: Scan status }, "404": { description: Not found } },
+      }
+  /v1/scans/{scan_id}/findings:
+    get:
+      {
+        summary: Read findings,
+        security: [{ bearerAuth: [] }],
+        responses: { "200": { description: Findings } },
+      }
+  /v1/scans/{scan_id}/evidence:
+    get:
+      {
+        summary: Read evidence metadata,
+        security: [{ bearerAuth: [] }],
+        responses: { "200": { description: Evidence } },
+      }
+  /v1/scans/{scan_id}/capsule:
+    get:
+      {
+        summary: Read signed Context Capsule,
+        security: [{ bearerAuth: [] }],
+        responses: { "200": { description: Signed capsule } },
+      }
+components:
+  securitySchemes: { bearerAuth: { type: http, scheme: bearer } }

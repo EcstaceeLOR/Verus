@@ -220,6 +220,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@verus/crypto':
+        specifier: workspace:^
+        version: link:../../packages/crypto
       '@verus/domain':
         specifier: workspace:^
         version: link:../../packages/domain
