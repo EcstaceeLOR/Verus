@@ -6,6 +6,7 @@ export {
   type MigrationResult,
 } from "./migrations.js";
 export { IdentityPersistence } from "./identity.js";
+export { exportAudit, type SafeAuditEvent } from "./audit-export.js";
 export {
   CredentialPersistence,
   type DiscoverableSigningKey,
