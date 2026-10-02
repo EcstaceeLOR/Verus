@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 
+export * from "./representation.js";
+
 export const DETECTOR_RULESET_SCHEMA_VERSION = "1.0" as const;
 export type DetectionDisposition = "allow" | "review" | "block";
 export type DetectionSeverity = "low" | "medium" | "high" | "critical";
