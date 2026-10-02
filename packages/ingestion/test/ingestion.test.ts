@@ -16,6 +16,7 @@ const request = Object.freeze({
 });
 
 function pool(): Pool {
+  const jobs: Record<string, unknown>[] = [];
   let scan: Record<string, unknown> | undefined;
   const client = {
     query: async (sql: string, values?: readonly unknown[]) => {
@@ -36,20 +37,43 @@ function pool(): Pool {
         };
         return { rows: [scan] };
       }
+      if (sql.includes("INSERT INTO jobs")) {
+        jobs.push({
+          job_id: values?.[1],
+          kind: values?.[4],
+          payload_ref: values?.[6],
+          idempotency_key: values?.[7],
+        });
+        return { rows: [], rowCount: 1 };
+      }
+      if (sql.includes("UPDATE scans") && sql.includes("state_version = state_version + 1")) {
+        if (scan === undefined) return { rows: [] };
+        scan = { ...scan, state: values?.[3], state_version: "1", updated_at: new Date() };
+        return { rows: [scan] };
+      }
       return { rows: [], rowCount: 1 };
     },
     release: () => undefined,
   };
-  return { connect: async () => client } as unknown as Pool;
+  return Object.assign({ connect: async () => client }, { jobs }) as unknown as Pool;
 }
 
 describe("ingestion acceptance", () => {
   it("creates one immutable-digest scan and resolves an exact idempotent replay", async () => {
-    const service = new IngestionService(pool());
+    const database = pool() as Pool & { jobs: Record<string, unknown>[] };
+    const service = new IngestionService(database);
     const first = await service.accept(workspaceId, request);
     const replay = await service.accept(workspaceId, request);
     expect(first.created).toBe(true);
+    expect(first.scan.state).toBe("queued");
     expect(first.scan.inputDigest).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(database.jobs).toMatchObject([
+      {
+        kind: "scan.process",
+        idempotency_key: `scan-process:${first.scan.scanId}`,
+        payload_ref: `object://sha256/${first.scan.inputDigest.slice("sha256:".length)}`,
+      },
+    ]);
     expect(replay).toMatchObject({ created: false, scan: { scanId: first.scan.scanId } });
   });
 

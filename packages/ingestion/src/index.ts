@@ -12,7 +12,7 @@ const limits = Object.freeze({
   maxUploadBytes: 100_000_000,
 });
 
-function identifier(prefix: "env" | "scan"): string {
+function identifier(prefix: "env" | "job" | "scan"): string {
   const time = BigInt(Date.now());
   const entropy = randomBytes(16);
   let encoded = "";
@@ -104,7 +104,28 @@ export class IngestionService {
             provenance: request.provenance,
             envelope: request as unknown as Readonly<Record<string, unknown>>,
           });
-          return Object.freeze({ scan, created: true });
+          const queued = await store.enqueueJob({
+            jobId: identifier("job"),
+            correlationId: request.request_id,
+            queue: "trusted",
+            kind: "scan.process",
+            envelopeVersion: 1,
+            payloadRef: `object://sha256/${inputDigest.slice("sha256:".length)}`,
+            idempotencyKey: `scan-process:${scan.scanId}`,
+            effectKey: `scan-process:${scan.scanId}`,
+            maxAttempts: 3,
+            timeoutMs: 15 * 60_000,
+            deadlineAt: new Date(Date.now() + 24 * 60 * 60_000),
+          });
+          if (!queued)
+            throw new VerusError("CONFLICT", "A scan-processing job already exists for this scan.");
+          const transitioned = await store.transitionScan({
+            scanId: scan.scanId,
+            expectedVersion: scan.stateVersion,
+            from: "accepted",
+            to: "queued",
+          });
+          return Object.freeze({ scan: transitioned, created: true });
         },
         { isolation: "serializable", operationName: "ingestion.accept" },
       );
