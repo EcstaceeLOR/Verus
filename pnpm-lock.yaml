@@ -426,9 +426,15 @@ importers:
 
   packages/ingestion:
     dependencies:
+      '@verus/capsules':
+        specifier: workspace:^
+        version: link:../capsules
       '@verus/contracts':
         specifier: workspace:^
         version: link:../contracts
+      '@verus/crypto':
+        specifier: workspace:^
+        version: link:../crypto
       '@verus/detection':
         specifier: workspace:^
         version: link:../detection
