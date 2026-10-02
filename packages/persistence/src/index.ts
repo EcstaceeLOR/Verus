@@ -23,6 +23,7 @@ export {
 } from "./lifecycle.js";
 export {
   CredentialPersistence,
+  type ActiveSigningKey,
   type DiscoverableSigningKey,
   type StoredApiKey,
 } from "./credentials.js";
@@ -43,6 +44,7 @@ export {
   type FindingRecord,
   type EvidenceRecord,
   type IngestionEnvelopeRecord,
+  type ActivePolicyRecord,
   type ScanState,
   type WorkspaceId,
 } from "./workspace.js";

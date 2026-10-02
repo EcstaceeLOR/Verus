@@ -52,6 +52,13 @@ export interface IngestionEnvelopeRecord {
   readonly provenance: Readonly<Record<string, unknown>>;
 }
 
+export interface ActivePolicyRecord {
+  readonly policyId: string;
+  readonly version: number;
+  readonly digest: string;
+  readonly document: Readonly<Record<string, unknown>>;
+}
+
 const WORKSPACE_ID_PATTERN = /^ws_[0-9A-HJKMNP-TV-Z]{26}$/;
 const transitions = Object.freeze({
   accepted: ["queued", "cancelled"],
@@ -556,6 +563,29 @@ export class WorkspacePersistence {
         input.createdBy,
       ],
     );
+  }
+
+  /** Resolves an explicitly configured active policy; callers must never guess between policy IDs. */
+  async getActivePolicy(policyId: string): Promise<Readonly<ActivePolicyRecord> | undefined> {
+    const result = await this.#client.query<{
+      policy_id: string;
+      version: string;
+      digest: string;
+      document: Record<string, unknown>;
+    }>(
+      `SELECT policy_id, version, digest, document
+       FROM policies
+       WHERE workspace_id = $1 AND policy_id = $2 AND lifecycle = 'active'`,
+      [this.#workspaceId, policyId],
+    );
+    const row = result.rows[0];
+    if (row === undefined) return undefined;
+    return Object.freeze({
+      policyId: row.policy_id,
+      version: Number(row.version),
+      digest: row.digest,
+      document: Object.freeze({ ...row.document }),
+    });
   }
 
   async insertFinding(input: {

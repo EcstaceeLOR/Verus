@@ -30,6 +30,14 @@ export interface DiscoverableSigningKey {
   readonly revokedAt?: Date;
 }
 
+export interface ActiveSigningKey {
+  readonly keyId: string;
+  readonly algorithm: "Ed25519";
+  readonly providerReference: string;
+  readonly publicKey: string;
+  readonly signUntil: Date;
+}
+
 export class CredentialPersistence {
   readonly #client: PoolClient;
   readonly #workspaceId: WorkspaceId;
@@ -347,6 +355,35 @@ export class CredentialPersistence {
         }),
       ),
     );
+  }
+
+  /** Returns the one key permitted to sign at `at`; retired and revoked keys fail closed. */
+  async getActiveSigningKey(at: Date): Promise<Readonly<ActiveSigningKey> | undefined> {
+    const result = await this.#client.query<{
+      algorithm: "Ed25519";
+      key_id: string;
+      provider_ref: string;
+      public_key: string;
+      sign_until: Date;
+    }>(
+      `SELECT key_id, algorithm, provider_ref, public_key, sign_until
+       FROM key_metadata
+       WHERE workspace_id = $1 AND purpose = 'capsule_signing' AND status = 'active'
+         AND revoked_at IS NULL AND public_key IS NOT NULL
+         AND not_before <= $2 AND sign_until > $2
+       ORDER BY not_before DESC
+       LIMIT 1`,
+      [this.#workspaceId, at],
+    );
+    const row = result.rows[0];
+    if (row === undefined) return undefined;
+    return Object.freeze({
+      keyId: row.key_id,
+      algorithm: row.algorithm,
+      providerReference: row.provider_ref,
+      publicKey: row.public_key,
+      signUntil: row.sign_until,
+    });
   }
 
   async revokeSigningKey(input: {
