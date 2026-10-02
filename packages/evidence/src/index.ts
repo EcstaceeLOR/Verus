@@ -7,6 +7,7 @@ export interface SourceRecord {
   readonly publicKeyFingerprints: readonly string[];
   readonly reviewState: "approved" | "revoked";
 }
+export * from "./sec.js";
 export interface SourceObservation {
   readonly requestedUrl: string;
   readonly finalUrl: string;
