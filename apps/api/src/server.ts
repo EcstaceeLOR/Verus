@@ -13,6 +13,7 @@ import { Pool } from "pg";
 
 import { healthPayload, parsePort } from "./health.js";
 import { createIngestionHandler } from "./ingestion.js";
+import { createScanCommandHandler } from "./scan-commands.js";
 import { createUploadHandler } from "./upload.js";
 
 const host = process.env.VERUS_API_HOST ?? "127.0.0.1";
@@ -42,6 +43,10 @@ const uploads =
         pool,
         resolveWorkspace: resolveInternalWorkspace,
       });
+const scanCommands =
+  pool === undefined
+    ? undefined
+    : createScanCommandHandler({ pool, resolveWorkspace: resolveInternalWorkspace });
 
 const server = createServer((request, response) => {
   const context = contextFromHeaders(request.headers);
@@ -52,6 +57,7 @@ const server = createServer((request, response) => {
       request.method === "GET" && ["/health/live", "/health/ready"].includes(requestUrl.pathname);
     if (uploads !== undefined && (await uploads(request, response, context))) return;
     if (ingestion !== undefined && (await ingestion(request, response, context))) return;
+    if (scanCommands !== undefined && (await scanCommands(request, response, context))) return;
     const route = isHealth ? requestUrl.pathname.slice(1).replace("/", "_") : "unmatched";
     const status = isHealth ? 200 : 404;
     const propagated = propagationHeaders(context);

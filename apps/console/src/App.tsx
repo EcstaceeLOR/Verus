@@ -7,6 +7,7 @@ import {
   type ConsoleView,
   type WorkspaceRole,
 } from "./console-state.js";
+import { ScanWorkspace } from "./ScanWorkspace.js";
 import { statusCopy, type ConnectionState } from "./status.js";
 
 const navigation: readonly { readonly id: ConsoleView; readonly label: string }[] = [
@@ -235,6 +236,8 @@ export function App() {
               </p>
             </section>
           </div>
+        ) : view === "scans" ? (
+          <ScanWorkspace />
         ) : (
           <section className="panel empty-state" aria-labelledby="empty-heading">
             <p className="eyebrow">{view}</p>
