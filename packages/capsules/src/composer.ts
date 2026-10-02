@@ -52,28 +52,28 @@ export async function composeContextCapsule(
     key: CapsuleSigningKey;
     signer: Ed25519SigningProvider;
     audit: CapsuleAuditSink;
-    build: (input: Readonly<{
-      capsule: Omit<ContextCapsule, "signature">;
-      approval: CapsuleApproval;
-      key: CapsuleSigningKey;
-      signer: Ed25519SigningProvider;
-      audit: CapsuleAuditSink;
-    }>) => Promise<Readonly<ContextCapsule>>;
+    build: (
+      input: Readonly<{
+        capsule: Omit<ContextCapsule, "signature">;
+        approval: CapsuleApproval;
+        key: CapsuleSigningKey;
+        signer: Ed25519SigningProvider;
+        audit: CapsuleAuditSink;
+      }>,
+    ) => Promise<Readonly<ContextCapsule>>;
   }>,
 ): Promise<Readonly<ContextCapsule>> {
   const createdAt = input.scan.createdAt.toISOString();
-  const findings = input.findings.map(
-    (item): Finding => ({
-      finding_id: item.findingId as Finding["finding_id"],
-      category: category(item.category, item.reasonCode),
-      severity: item.severity,
-      detector_id: item.detectorId,
-      reason_code: item.reasonCode,
-      ...(item.confidenceBps === undefined ? {} : { confidence_bps: item.confidenceBps }),
-      location: location(item.location),
-      extensions: {},
-    }),
-  );
+  const findings = input.findings.map((item): Finding => ({
+    finding_id: item.findingId as Finding["finding_id"],
+    category: category(item.category, item.reasonCode),
+    severity: item.severity,
+    detector_id: item.detectorId,
+    reason_code: item.reasonCode,
+    ...(item.confidenceBps === undefined ? {} : { confidence_bps: item.confidenceBps }),
+    location: location(item.location),
+    extensions: {},
+  }));
   const capsule: Omit<ContextCapsule, "signature"> = {
     schema_version: "1.0" as const,
     capsule_id: input.capsuleId,
@@ -87,7 +87,12 @@ export async function composeContextCapsule(
     findings,
     evidence: [],
     conflicts: [],
-    disposition: input.scan.state === "allowed" ? "allow" : input.scan.state === "blocked" ? "block" : "review",
+    disposition:
+      input.scan.state === "allowed"
+        ? "allow"
+        : input.scan.state === "blocked"
+          ? "block"
+          : "review",
     policy: input.policy,
     components: [input.component],
     extensions: {},
@@ -96,5 +101,11 @@ export async function composeContextCapsule(
     policyApprovedClaimIds: [],
     policyApprovedEvidenceIds: [],
   };
-  return input.build({ capsule, approval, key: input.key, signer: input.signer, audit: input.audit });
+  return input.build({
+    capsule,
+    approval,
+    key: input.key,
+    signer: input.signer,
+    audit: input.audit,
+  });
 }
