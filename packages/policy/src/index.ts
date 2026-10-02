@@ -40,9 +40,7 @@ const known = new Set([
   "policy_failure",
   "other",
 ]);
-export function evaluatePolicy(
-  input: Input,
-): Readonly<{
+export function evaluatePolicy(input: Input): Readonly<{
   disposition: Disposition;
   reasonCodes: readonly string[];
   policyDigest: string;
