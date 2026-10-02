@@ -23,6 +23,45 @@ export interface JobCompletionPort {
   }): Promise<unknown>;
 }
 
+export interface ScanProcessPort {
+  process(
+    input: Readonly<{ workspaceId: string; scanId: string }>,
+  ): Promise<Readonly<{ capsuleDigest: string }>>;
+}
+
+const SCAN_EFFECT_KEY = /^scan-process:(scan_[0-9A-HJKMNP-TV-Z]{26})$/;
+
+/** Creates the durable handler for scan.process jobs and rejects malformed or unsupported jobs. */
+export function createScanProcessHandler(
+  processor: ScanProcessPort,
+): (job: ClaimedJob) => Promise<JobExecutionOutcome> {
+  return async (job) => {
+    if (job.kind !== "scan.process") {
+      return { kind: "failed", errorCode: "JOB_UNSUPPORTED_ENVELOPE", retryable: false };
+    }
+    const match = SCAN_EFFECT_KEY.exec(job.effectKey);
+    if (match === null)
+      return { kind: "failed", errorCode: "JOB_UNSUPPORTED_ENVELOPE", retryable: false };
+    try {
+      const result = await processor.process({
+        workspaceId: job.workspaceId,
+        scanId: match[1] as string,
+      });
+      const digest = result.capsuleDigest;
+      if (!/^sha256:[0-9a-f]{64}$/.test(digest)) {
+        return { kind: "failed", errorCode: "JOB_HANDLER_FAILED", retryable: false };
+      }
+      return {
+        kind: "completed",
+        resultDigest: digest,
+        resultRef: `object://sha256/${digest.slice("sha256:".length)}`,
+      };
+    } catch {
+      return { kind: "failed", errorCode: "JOB_DEPENDENCY_UNAVAILABLE", retryable: true };
+    }
+  };
+}
+
 export async function executeClaimedJob(
   job: ClaimedJob,
   completion: JobCompletionPort,

@@ -2,7 +2,11 @@ import type { ClaimedJob } from "@verus/jobs";
 import { StructuredLogger } from "@verus/observability";
 import { describe, expect, it } from "vitest";
 
-import { executeClaimedJob, type JobCompletionPort } from "../src/index.js";
+import {
+  createScanProcessHandler,
+  executeClaimedJob,
+  type JobCompletionPort,
+} from "../src/index.js";
 
 const job = Object.freeze({
   workspaceId: "ws_01ARZ3NDEKTSV4RRFFQ69G5FC0",
@@ -23,6 +27,24 @@ const job = Object.freeze({
 } satisfies ClaimedJob);
 
 describe("worker telemetry composition", () => {
+  it("turns a scan-process effect into a durable capsule result", async () => {
+    const handler = createScanProcessHandler({
+      process: async (input) => {
+        expect(input).toEqual({
+          workspaceId: job.workspaceId,
+          scanId: "scan_01ARZ3NDEKTSV4RRFFQ69G5FC0",
+        });
+        return { capsuleDigest: `sha256:${"b".repeat(64)}` };
+      },
+    });
+    await expect(
+      handler({ ...job, effectKey: "scan-process:scan_01ARZ3NDEKTSV4RRFFQ69G5FC0" }),
+    ).resolves.toEqual({
+      kind: "completed",
+      resultDigest: `sha256:${"b".repeat(64)}`,
+      resultRef: `object://sha256/${"b".repeat(64)}`,
+    });
+  });
   it("retains the durable correlation ID through claim, handler, completion, and logs", async () => {
     const completed: unknown[] = [];
     const lines: string[] = [];
