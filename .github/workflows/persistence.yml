@@ -45,6 +45,7 @@ jobs:
       - run: corepack pnpm --filter @verus/contracts build
       - run: corepack pnpm --filter @verus/domain build
       - run: corepack pnpm --filter @verus/persistence build
+      - run: corepack pnpm --filter @verus/detection build
       - run: corepack pnpm --filter @verus/ingestion build
       - run: corepack pnpm --filter @verus/ingestion test
       - run: corepack pnpm --filter @verus/jobs... build
