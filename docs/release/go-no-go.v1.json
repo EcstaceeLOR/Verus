@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "decision": "no-go",
+  "releaseCandidate": "unassigned",
+  "reviewedAt": null,
+  "owners": {
+    "release": "unassigned",
+    "security": "unassigned",
+    "operations": "unassigned",
+    "product": "unassigned"
+  },
+  "blockers": [
+    {
+      "id": "external-security-review",
+      "owner": "security",
+      "reviewBy": null,
+      "status": "open"
+    },
+    {
+      "id": "staging-qualification-drills",
+      "owner": "operations",
+      "reviewBy": null,
+      "status": "open"
+    }
+  ],
+  "artifacts": []
+}
