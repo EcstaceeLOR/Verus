@@ -17,6 +17,7 @@ export interface StoredApiKey {
   readonly verifierVersion: number;
   readonly scopes: readonly AuthorizationAction[];
   readonly status: "active" | "retiring";
+  readonly workspaceStatus: "active" | "suspended" | "deleting";
 }
 
 export interface DiscoverableSigningKey {
@@ -112,13 +113,16 @@ export class CredentialPersistence {
       scopes: AuthorizationAction[];
       service_account_id: string;
       status: "active" | "retiring";
+      workspace_status: "active" | "suspended" | "deleting";
       verifier: string;
       verifier_version: number;
     }>(
-      `SELECT k.key_id, k.service_account_id, k.verifier, k.verifier_version, k.scopes, k.status
+      `SELECT k.key_id, k.service_account_id, k.verifier, k.verifier_version, k.scopes, k.status,
+              w.status AS workspace_status
        FROM api_keys k
        JOIN service_accounts a
          ON a.workspace_id = k.workspace_id AND a.service_account_id = k.service_account_id
+       JOIN workspaces w ON w.workspace_id = k.workspace_id
        WHERE k.workspace_id = $1 AND k.key_id = $2 AND k.status IN ('active', 'retiring')
          AND a.status = 'active'
          AND (k.expires_at IS NULL OR k.expires_at > clock_timestamp())`,
@@ -133,6 +137,7 @@ export class CredentialPersistence {
       verifierVersion: row.verifier_version,
       scopes: Object.freeze([...row.scopes]),
       status: row.status,
+      workspaceStatus: row.workspace_status,
     });
   }
 

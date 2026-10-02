@@ -209,6 +209,11 @@ export class IdentityPersistence {
     return grant;
   }
 
+  /** Authorizes a human control-plane action and returns its audit actor identity. */
+  async requireHumanAction(sessionId: string, action: AuthorizationAction): Promise<string> {
+    return (await this.#requireHuman(sessionId, action)).subjectId;
+  }
+
   async createInvitation(input: {
     readonly actorSessionId: string;
     readonly invitationId: string;

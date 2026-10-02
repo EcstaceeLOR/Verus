@@ -9,13 +9,18 @@ import {
   FixedWindowRateLimiter,
   type ApiPrincipal,
 } from "../src/public-api.js";
+import { TenantQuotaAdmission } from "../src/tenancy.js";
 
 const principal: ApiPrincipal = {
   workspaceId: "ws_01ARZ3NDEKTSV4RRFFQ69G5FAW",
   keyId: "key_01ARZ3NDEKTSV4RRFFQ69G5FB5",
   scopes: ["scan.read"],
 };
-async function invoke(path: string, limiter = new FixedWindowRateLimiter(10, 1_000)) {
+async function invoke(
+  path: string,
+  limiter = new FixedWindowRateLimiter(10, 1_000),
+  admission?: TenantQuotaAdmission,
+) {
   const request = Object.assign(new PassThrough(), {
     method: "GET",
     url: path,
@@ -32,6 +37,7 @@ async function invoke(path: string, limiter = new FixedWindowRateLimiter(10, 1_0
   } as unknown as ServerResponse & { status: number };
   const handler = createPublicApiHandler({
     authenticator: { authenticate: async () => principal },
+    ...(admission === undefined ? {} : { admission }),
     limiter,
     data: {
       getScan: async () => ({ scan_id: "scan_1", raw_content: "never expose" }),
@@ -68,6 +74,17 @@ describe("public API contract", () => {
     const result = await invoke("/v1/scans", limiter);
     expect(result.status).toBe(429);
     expect(result.body.code).toBe("RATE_LIMITED");
+  });
+  it("enforces workspace quotas and suspension before data access", async () => {
+    const admission = new TenantQuotaAdmission(10, 1, 1_000, () => 1_000);
+    expect((await invoke("/v1/scans", undefined, admission)).status).toBe(200);
+    const limited = await invoke("/v1/scans", undefined, admission);
+    expect(limited.status).toBe(429);
+    expect(limited.body.code).toBe("RATE_LIMITED");
+    admission.suspend(principal.workspaceId);
+    const suspended = await invoke("/v1/scans", undefined, admission);
+    expect(suspended.status).toBe(403);
+    expect(suspended.body.code).toBe("AUTHORIZATION_DENIED");
   });
 });
 describe("API key authentication", () => {

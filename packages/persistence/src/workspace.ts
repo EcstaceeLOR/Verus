@@ -116,6 +116,33 @@ export class WorkspacePersistence {
     return Object.freeze({ displayName: row.display_name, slug: row.slug, status: row.status });
   }
 
+  /** Suspensions and resumption are owner/admin actions and are recorded in the immutable audit log. */
+  async setWorkspaceStatus(input: {
+    readonly actorSessionId: string;
+    readonly auditEventId: string;
+    readonly occurredAt: Date;
+    readonly status: "active" | "suspended";
+  }): Promise<void> {
+    const actorId = await this.identity().requireHumanAction(
+      input.actorSessionId,
+      "workspace.update",
+    );
+    const result = await this.#client.query<{ status: "active" | "suspended" | "deleting" }>(
+      `UPDATE workspaces SET status = $2, updated_at = $3
+       WHERE workspace_id = $1 AND status <> 'deleting'
+       RETURNING status`,
+      [this.#workspaceId, input.status, input.occurredAt],
+    );
+    if (result.rows[0] === undefined)
+      throw new VerusError("NOT_FOUND", "Workspace is unavailable.");
+    await this.#client.query(
+      `INSERT INTO audit_events
+         (workspace_id, event_id, actor_type, actor_id, action, target_type, target_id, new_state, occurred_at)
+       VALUES ($1, $2, 'user', $3, 'workspace.status_changed', 'workspace', $1, $4, $5)`,
+      [this.#workspaceId, input.auditEventId, actorId, { status: input.status }, input.occurredAt],
+    );
+  }
+
   async createScan(input: {
     readonly scanId: string;
     readonly requestId: string;
