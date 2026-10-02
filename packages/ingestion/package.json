@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@verus/contracts": "workspace:^",
+    "@verus/detection": "workspace:^",
     "@verus/domain": "workspace:^",
     "@verus/persistence": "workspace:^",
     "pg": "8.23.0"

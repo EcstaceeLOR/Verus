@@ -42,6 +42,7 @@ export {
   type ScanRecord,
   type FindingRecord,
   type EvidenceRecord,
+  type IngestionEnvelopeRecord,
   type ScanState,
   type WorkspaceId,
 } from "./workspace.js";

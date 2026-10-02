@@ -429,6 +429,9 @@ importers:
       '@verus/contracts':
         specifier: workspace:^
         version: link:../contracts
+      '@verus/detection':
+        specifier: workspace:^
+        version: link:../detection
       '@verus/domain':
         specifier: workspace:^
         version: link:../domain

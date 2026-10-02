@@ -44,6 +44,12 @@ export interface EvidenceRecord {
   readonly sourceId: string;
 }
 
+export interface IngestionEnvelopeRecord {
+  readonly envelope: Readonly<Record<string, unknown>>;
+  readonly inputKind: "feed_event" | "text" | "upload" | "url";
+  readonly provenance: Readonly<Record<string, unknown>>;
+}
+
 const WORKSPACE_ID_PATTERN = /^ws_[0-9A-HJKMNP-TV-Z]{26}$/;
 const transitions = Object.freeze({
   accepted: ["queued", "cancelled"],
@@ -306,6 +312,29 @@ export class WorkspacePersistence {
     );
     const row = result.rows[0];
     return row === undefined ? undefined : toScan(row);
+  }
+
+  /** Returns the immutable acceptance envelope only to a tenant-scoped processing transaction. */
+  async getIngestionEnvelope(
+    scanId: string,
+  ): Promise<Readonly<IngestionEnvelopeRecord> | undefined> {
+    const result = await this.#client.query<{
+      envelope: Record<string, unknown>;
+      input_kind: IngestionEnvelopeRecord["inputKind"];
+      provenance: Record<string, unknown>;
+    }>(
+      `SELECT envelope, input_kind, provenance
+       FROM ingestion_envelopes WHERE workspace_id = $1 AND scan_id = $2`,
+      [this.#workspaceId, scanId],
+    );
+    const row = result.rows[0];
+    return row === undefined
+      ? undefined
+      : Object.freeze({
+          envelope: Object.freeze({ ...row.envelope }),
+          inputKind: row.input_kind,
+          provenance: Object.freeze({ ...row.provenance }),
+        });
   }
 
   async createIngestionEnvelope(input: {
