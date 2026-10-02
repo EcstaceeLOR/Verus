@@ -1,0 +1,39 @@
+name: Release plan
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        type: choice
+        options: [staging, production]
+      operation:
+        description: Release operation
+        required: true
+        type: choice
+        options: [deploy, rollback]
+      release_file:
+        description: Repository-relative reviewed release file
+        required: true
+        default: deploy/release.example.json
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+      - run: node scripts/verify-infrastructure.mjs
+      - run:
+          node scripts/plan-release.mjs --environment "${{ inputs.environment }}" --operation "${{
+          inputs.operation }}" --release "${{ inputs.release_file }}"

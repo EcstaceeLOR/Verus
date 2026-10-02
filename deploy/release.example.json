@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "release": {
+    "revision": "0123456789abcdef0123456789abcdef01234567",
+    "images": {
+      "api": "registry.example/verus/api@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "console": "registry.example/verus/console@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "worker": "registry.example/verus/worker@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "retriever": "registry.example/verus/retriever@sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "parser": "registry.example/verus/parser@sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "model-gateway": "registry.example/verus/model-gateway@sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "migration": { "mode": "expand", "backwardCompatible": true },
+    "previousRevision": "fedcba9876543210fedcba9876543210fedcba98"
+  }
+}
