@@ -2,5 +2,27 @@
   "name": "@verus/mcp",
   "version": "0.0.0",
   "private": true,
-  "description": "Verus MCP server composition root; implemented in issue #39."
+  "description": "Safe MCP server for Verus scan and Context Capsule workflows.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint src test",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@verus/contracts": "workspace:^",
+    "@verus/domain": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
 }
