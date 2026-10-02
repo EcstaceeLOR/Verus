@@ -334,6 +334,121 @@ h2 {
   white-space: nowrap;
   border: 0;
 }
+.scan-workspace {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(280px, 0.75fr) minmax(0, 1.25fr);
+}
+.scan-submit form {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+}
+.scan-submit fieldset {
+  display: flex;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+}
+.input-choice {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: #425249;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+.scan-input input,
+.scan-input textarea,
+.search-field input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #bfcdbf;
+  border-radius: 9px;
+  color: #17211b;
+  background: #fff;
+}
+.scan-input textarea {
+  resize: vertical;
+}
+.field-help,
+.empty-copy {
+  margin: -6px 0 0;
+  color: #627066;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+.form-error {
+  margin: 0;
+  color: #9e2e1e;
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+.search-field {
+  min-width: 145px;
+}
+.scan-list {
+  display: grid;
+  gap: 0;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.scan-list li {
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-top: 1px solid #ebefeb;
+}
+.scan-list strong {
+  display: block;
+  color: #26362b;
+  font-size: 0.9rem;
+}
+.scan-list p {
+  margin: 4px 0 0;
+  color: #718076;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.7rem;
+}
+.scan-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.scan-stage {
+  padding: 4px 7px;
+  border-radius: 99px;
+  color: #496051;
+  background: #eff3ef;
+  font-size: 0.72rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.scan-stage--allowed {
+  color: #14683d;
+  background: #e8f5eb;
+}
+.scan-stage--blocked,
+.scan-stage--failed {
+  color: #9e2e1e;
+  background: #fbedeb;
+}
+.scan-stage--review {
+  color: #7a5300;
+  background: #fff4d7;
+}
+.text-action {
+  padding: 4px;
+  border: 0;
+  color: #315d40;
+  background: transparent;
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-decoration: underline;
+}
 @media (max-width: 760px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -368,6 +483,9 @@ h2 {
     align-self: flex-start;
   }
   .overview-grid {
+    grid-template-columns: 1fr;
+  }
+  .scan-workspace {
     grid-template-columns: 1fr;
   }
   .panel--wide {
