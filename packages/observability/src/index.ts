@@ -18,3 +18,13 @@ export {
   type StructuredLogEvent,
 } from "./logger.js";
 export { METRIC_DEFINITIONS, SafeMetricRegistry, type MetricName } from "./metrics.js";
+export {
+  diagnoseCorrelation,
+  evaluateOperationalAlerts,
+  type AlertSeverity,
+  type DiagnosticOutcome,
+  type DiagnosticStage,
+  type DiagnosticStep,
+  type OperationalAlert,
+  type OperationalSnapshot,
+} from "./alerts.js";

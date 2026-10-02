@@ -49,6 +49,35 @@ the six-hour burn rate exceeds 6x; ticket when the three-day burn rate exceeds 1
 sustained oldest-ready age above five minutes, inability to commit audit records, or rapid
 dead-letter growth. Alert on missing telemetry separately; absence of signals is not health.
 
+## Alert ownership and noise controls
+
+| Alert                  | Owner            | Runbook                                                | Tested noise control                                |
+| ---------------------- | ---------------- | ------------------------------------------------------ | --------------------------------------------------- |
+| Availability burn      | Platform on-call | This section                                           | Suppress only during declared maintenance           |
+| Error-budget burn      | Platform on-call | This section                                           | Suppress only during declared maintenance           |
+| Oldest-ready queue age | Platform on-call | [Durable jobs](./durable-jobs.md#telemetry-and-alerts) | Page only above five continuous minutes             |
+| Audit commit failure   | Security on-call | [Audit commit failure](#audit-commit-failure)          | Never suppressed by maintenance                     |
+| Dead-letter growth     | Platform on-call | [Durable jobs](./durable-jobs.md#telemetry-and-alerts) | Require ten new dead letters in one hour            |
+| Telemetry stale        | Platform on-call | This section                                           | Page after five minutes without aggregate telemetry |
+
+The `evaluateOperationalAlerts` implementation accepts aggregate, bounded signals only and returns
+the fixed owner and runbook for every page. Alert tests include the planned-maintenance suppression
+case; changes to thresholds or suppression rules require an on-call review.
+
+## Audit commit failure
+
+1. Stop traffic promotion and inspect database availability using infrastructure metrics.
+2. Search by correlation ID, then use authorized audit tooling to identify affected workspaces.
+3. Do not add scan identifiers, payloads, exception text, or credentials to the incident.
+4. Restore durable audit writes before retrying work; retain prior immutable events.
+
+## End-to-end scan diagnosis
+
+Use `diagnoseCorrelation` with the correlation ID and allowlisted API, queue, worker, parser, model,
+policy, and evidence stages. It reports only whether the flow is complete and the non-success
+terminal stage. Operators then pivot through authorized audit tooling; scan IDs, content, object
+references, and secrets are never copied into telemetry or the diagnosis result.
+
 ## Incident and retention rules
 
 Start with correlation and trace IDs, then pivot to tenant-scoped audit tooling under authorization.
