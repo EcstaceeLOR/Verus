@@ -43,7 +43,8 @@ describe("Context Capsules", () => {
   it("signs, stores, verifies offline, and preserves an append-only audit trail", async () => {
     const setupResult = await setup();
     try {
-      const { signature: _signature, ...unsigned } = fixture;
+      const unsigned = structuredClone(fixture);
+      delete unsigned.signature;
       const capsule = await buildCapsule({
         capsule: unsigned,
         approval: {
@@ -67,7 +68,8 @@ describe("Context Capsules", () => {
   it("rejects tampering and explains model-provider replay limitations", async () => {
     const setupResult = await setup();
     try {
-      const { signature: _signature, ...unsigned } = fixture;
+      const unsigned = structuredClone(fixture);
+      delete unsigned.signature;
       const capsule = await buildCapsule({
         capsule: unsigned,
         approval: {

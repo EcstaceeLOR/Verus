@@ -4,11 +4,11 @@ import { join, resolve } from "node:path";
 import { parseContextCapsule, type ContextCapsule } from "@verus/contracts";
 import {
   canonicalizeJson,
-  Ed25519SigningProvider,
   sha256Digest,
   verifyEd25519Signature,
   type PublicSigningKey,
 } from "@verus/crypto";
+import type { Ed25519SigningProvider } from "@verus/crypto";
 
 type UnsignedCapsule = Omit<ContextCapsule, "signature">;
 
@@ -192,8 +192,9 @@ export class FileSystemCapsuleStore implements CapsuleStore, CapsuleAuditSink {
 }
 
 function omitSignature(capsule: ContextCapsule): UnsignedCapsule {
-  const { signature: _signature, ...unsigned } = capsule;
-  return unsigned;
+  return Object.fromEntries(
+    Object.entries(capsule).filter(([key]) => key !== "signature"),
+  ) as UnsignedCapsule;
 }
 function assertApproved(capsule: UnsignedCapsule, approval: CapsuleApproval): void {
   const claims = new Set(approval.policyApprovedClaimIds);
