@@ -3,9 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   canCancel,
   canRetry,
+  findingPresentation,
   safeHistory,
   safeHostedScanResult,
   safePreview,
+  verdictPresentation,
 } from "./scan-workflow.js";
 
 describe("scan workflow presentation", () => {
@@ -85,5 +87,24 @@ describe("scan workflow presentation", () => {
       }),
     ).toMatchObject({ disposition: "block", findings: [{ severity: "critical" }] });
     expect(safeHostedScanResult({ disposition: "allow", findings: [] })).toBeUndefined();
+  });
+
+  it("turns security decisions into direct operator guidance", () => {
+    expect(verdictPresentation("block")).toEqual({
+      title: "Context stopped",
+      symbol: "×",
+      guidance: "Do not pass this context to a trading agent.",
+    });
+    expect(verdictPresentation("review").guidance).toContain("person");
+  });
+
+  it("explains known findings and fails safely for new reason codes", () => {
+    expect(findingPresentation("DIRECT_INSTRUCTION_OVERRIDE").label).toBe(
+      "Instruction override detected",
+    );
+    expect(findingPresentation("NEW_DETECTION")).toEqual({
+      label: "new detection",
+      explanation: "The text matched a configured context-safety rule.",
+    });
   });
 });
