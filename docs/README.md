@@ -10,6 +10,7 @@ approval or a claim of investment truth.
 | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | Run Verus locally                           | [Local development](development/local-development.md)                                                      |
 | Recreate staging or promote a release       | [Staged deployments](../deploy/README.md)                                                                  |
+| Integrate with the durable REST API         | [REST API v1](api/README.md)                                                                               |
 | Integrate an agent                          | [OpenAPI contract](api/openapi.v1.yaml), [SDK](../packages/sdk/README.md), or [MCP](../apps/mcp/README.md) |
 | Understand scans and capsules               | [Context Capsules](operations/context-capsules.md) and [v1 contracts](../contracts/v1/README.md)           |
 | Operate jobs, alerts, recovery, or capacity | [Operations guides](#operations)                                                                           |

@@ -18,6 +18,11 @@ export interface ApiRateLimiter {
     principal: ApiPrincipal,
   ): Promise<Readonly<{ allowed: boolean; retryAfterSeconds?: number }>>;
 }
+export interface PublicRequestAuthorization {
+  readonly authenticator: ApiAuthenticator;
+  readonly admission?: TenantAdmission;
+  readonly limiter: ApiRateLimiter;
+}
 export interface PublicApiData {
   getScan(
     workspaceId: string,
@@ -70,6 +75,31 @@ function safeRecord(value: Readonly<Record<string, unknown>>): Readonly<Record<s
   );
 }
 
+/** Applies the same authentication, tenant admission, and key rate limit to every public route. */
+export async function authorizePublicRequest(
+  input: PublicRequestAuthorization,
+  request: IncomingMessage,
+  response: ServerResponse,
+  action: AuthorizationAction,
+): Promise<ApiPrincipal> {
+  const principal = await input.authenticator.authenticate(request, action);
+  const admitted = await input.admission?.admit(principal);
+  if (admitted !== undefined && !admitted.allowed) {
+    if (admitted.reason === "quota")
+      response.setHeader("retry-after", String(admitted.retryAfterSeconds ?? 1));
+    throw new VerusError(
+      admitted.reason === "quota" ? "RATE_LIMITED" : "AUTHORIZATION_DENIED",
+      "Request is unavailable.",
+    );
+  }
+  const rate = await input.limiter.check(principal);
+  if (!rate.allowed) {
+    response.setHeader("retry-after", String(rate.retryAfterSeconds ?? 1));
+    throw new VerusError("RATE_LIMITED", "Request limit exceeded.");
+  }
+  return principal;
+}
+
 /** Versioned public API. Deliberately returns derived records only; hostile source bytes are never serialized. */
 export function createPublicApiHandler(
   input: Readonly<{
@@ -100,21 +130,7 @@ export function createPublicApiHandler(
             : match[2] === "capsule"
               ? "capsule.read"
               : "scan.read";
-      const principal = await input.authenticator.authenticate(request, action);
-      const admitted = await input.admission?.admit(principal);
-      if (admitted !== undefined && !admitted.allowed) {
-        if (admitted.reason === "quota")
-          response.setHeader("retry-after", String(admitted.retryAfterSeconds ?? 1));
-        throw new VerusError(
-          admitted.reason === "quota" ? "RATE_LIMITED" : "AUTHORIZATION_DENIED",
-          "Request is unavailable.",
-        );
-      }
-      const rate = await input.limiter.check(principal);
-      if (!rate.allowed) {
-        response.setHeader("retry-after", String(rate.retryAfterSeconds ?? 1));
-        throw new VerusError("RATE_LIMITED", "Request limit exceeded.");
-      }
+      const principal = await authorizePublicRequest(input, request, response, action);
       const scanId = match[1];
       if (scanId === undefined) {
         const listed = await input.data.listScans({

@@ -1,8 +1,10 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import { toProblemDetails, VerusError } from "@verus/domain";
-import { INGESTION_LIMITS, type IngestionService } from "@verus/ingestion";
+import { INGESTION_LIMITS, type AcceptedIngestion } from "@verus/ingestion";
 import type { TelemetryContext } from "@verus/observability";
+
+import { authorizePublicRequest, type PublicRequestAuthorization } from "./public-api.js";
 
 export type TrustedWorkspaceResolver = (request: IncomingMessage) => string | undefined;
 
@@ -30,9 +32,14 @@ async function readJson(request: IncomingMessage): Promise<unknown> {
   }
 }
 
+export interface IngestionAcceptor {
+  accept(workspaceId: string, body: unknown): Promise<Readonly<AcceptedIngestion>>;
+}
+
 export function createIngestionHandler(input: {
-  readonly service: IngestionService;
+  readonly service: IngestionAcceptor;
   readonly resolveWorkspace: TrustedWorkspaceResolver;
+  readonly publicAuthorization?: PublicRequestAuthorization;
 }) {
   return async (
     request: IncomingMessage,
@@ -45,12 +52,22 @@ export function createIngestionHandler(input: {
     )
       return false;
     try {
-      const workspaceId = input.resolveWorkspace(request);
-      if (workspaceId === undefined)
-        throw new VerusError("AUTHENTICATION_REQUIRED", "Trusted tenant context required.");
+      let workspaceId = input.resolveWorkspace(request);
+      if (workspaceId === undefined) {
+        if (input.publicAuthorization === undefined)
+          throw new VerusError(
+            "AUTHENTICATION_REQUIRED",
+            "A public API key or trusted service token is required.",
+          );
+        workspaceId = (
+          await authorizePublicRequest(input.publicAuthorization, request, response, "scan.create")
+        ).workspaceId;
+      }
       const accepted = await input.service.accept(workspaceId, await readJson(request));
       response.writeHead(accepted.created ? 202 : 200, {
+        "cache-control": "no-store",
         "content-type": "application/json; charset=utf-8",
+        location: `/v1/scans/${accepted.scan.scanId}`,
       });
       response.end(
         JSON.stringify({
@@ -63,6 +80,7 @@ export function createIngestionHandler(input: {
     } catch (error) {
       const problem = toProblemDetails(error, context.correlationId);
       response.writeHead(problem.status, {
+        "cache-control": "no-store",
         "content-type": "application/problem+json; charset=utf-8",
       });
       response.end(JSON.stringify(problem));
