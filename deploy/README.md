@@ -6,9 +6,11 @@ identities, private data services, DNS/TLS/CDN at the edge, and the parser has n
 Secrets belong in the selected external secret manager; neither this repository nor release files
 contain credentials.
 
-The public console can be deployed from the repository root with Vercel. The checked `vercel.json`
-keeps pnpm workspace resolution intact and publishes only `apps/console/dist`. This hosts the UI;
-the API, worker, PostgreSQL, object store, and secret provider remain separately deployed services.
+The public console and stateless hosted text scanner can be deployed from the repository root with
+Vercel. The checked `vercel.json` keeps pnpm workspace resolution intact, publishes
+`apps/console/dist`, and bundles the functions under `api/`. The hosted scanner processes text in
+memory, returns deterministic findings and digests, and does not persist source text. The durable
+API, worker, PostgreSQL, object store, and secret provider remain separately deployed services.
 
 ## Recreate staging
 

@@ -2,6 +2,7 @@
   "name": "verus",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "description": "The context firewall for trading agents",
   "license": "Apache-2.0",
   "packageManager": "pnpm@12.8.1",
@@ -11,16 +12,18 @@
   },
   "scripts": {
     "build": "node scripts/run-turbo.mjs run build",
-    "check": "corepack pnpm run format:check && corepack pnpm run lint && node scripts/run-turbo.mjs run typecheck test build && corepack pnpm run verify",
+    "check": "corepack pnpm run format:check && corepack pnpm run lint && corepack pnpm run typecheck:vercel && corepack pnpm run test:vercel && node scripts/run-turbo.mjs run typecheck test build && corepack pnpm run verify",
     "dev": "node scripts/run-turbo.mjs run dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "infra:down": "docker compose --env-file .env.example -f deploy/compose/compose.yml down",
     "infra:up": "docker compose --env-file .env.example -f deploy/compose/compose.yml up -d --wait",
-    "lint": "eslint eslint.config.mjs scripts .github/*.mjs docs/**/*.mjs contracts/**/*.mjs && markdownlint-cli2 \"**/*.md\" && node scripts/run-turbo.mjs run lint",
+    "lint": "eslint eslint.config.mjs scripts api .github/*.mjs docs/**/*.mjs contracts/**/*.mjs && markdownlint-cli2 \"**/*.md\" && node scripts/run-turbo.mjs run lint",
     "test": "node scripts/run-turbo.mjs run test",
     "test:artifacts": "node scripts/collect-test-artifacts.mjs",
+    "test:vercel": "vitest run test/hosted-scan.test.ts",
     "typecheck": "node scripts/run-turbo.mjs run typecheck",
+    "typecheck:vercel": "tsc -p api/tsconfig.json --noEmit",
     "verify": "node scripts/verify-workspace.mjs && node .github/verify-governance.mjs && node docs/architecture/verify-dependencies.mjs && node docs/security/verify-data-handling.mjs && node contracts/v1/verify-canonicalization.mjs && node contracts/v1/verify-policy-vectors.mjs && node corpus/v1/verify-corpus.mjs && node corpus/v1/evaluate-detection.mjs && node scripts/verify-infrastructure.mjs && node scripts/verify-release-qualification.mjs && node scripts/verify-go-no-go.mjs"
   },
   "devDependencies": {
