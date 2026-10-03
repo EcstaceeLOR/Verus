@@ -10,3 +10,5 @@ node_modules/
 *.tsbuildinfo
 .DS_Store
 Thumbs.db
+
+.vercel
