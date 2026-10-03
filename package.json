@@ -26,9 +26,6 @@
     "typecheck:vercel": "tsc -p api/tsconfig.json --noEmit",
     "verify": "node scripts/verify-workspace.mjs && node .github/verify-governance.mjs && node docs/architecture/verify-dependencies.mjs && node docs/security/verify-data-handling.mjs && node contracts/v1/verify-canonicalization.mjs && node contracts/v1/verify-policy-vectors.mjs && node corpus/v1/verify-corpus.mjs && node corpus/v1/evaluate-detection.mjs && node scripts/verify-infrastructure.mjs && node scripts/verify-release-qualification.mjs && node scripts/verify-go-no-go.mjs"
   },
-  "dependencies": {
-    "@verus/detection": "workspace:^"
-  },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/node": "26.6.3",

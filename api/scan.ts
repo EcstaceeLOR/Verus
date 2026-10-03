@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 
-import { DeterministicRuleEngine } from "@verus/detection";
+import { DeterministicRuleEngine } from "../packages/detection/src/index.js";
 
 import type { HostedRequest, HostedResponse } from "./http.js";
 import { secureJson } from "./http.js";
