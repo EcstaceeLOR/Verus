@@ -34,7 +34,7 @@ export function parseWorkerRuntimeConfig(
     throw new TypeError("Invalid worker ID.");
   try {
     new URL(environment.VERUS_DATABASE_URL as string);
-    JSON.parse(environment.VERUS_WORKER_RULESET_JSON as string);
+    parseRuleSet(environment.VERUS_WORKER_RULESET_JSON as string);
   } catch {
     throw new TypeError("Worker database URL or detector rules are invalid.");
   }
@@ -53,3 +53,4 @@ export function parseWorkerRuntimeConfig(
     workerId,
   });
 }
+import { parseRuleSet } from "@verus/detection";

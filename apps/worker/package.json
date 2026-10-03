@@ -8,21 +8,30 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./dist/index.js"
+    },
+    "./runtime": {
+      "types": "./src/runtime.ts",
+      "default": "./dist/runtime.js"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint src test",
+    "start": "node dist/runtime.js",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@verus/crypto": "workspace:^",
+    "@verus/detection": "workspace:^",
     "@verus/ingestion": "workspace:^",
     "@verus/jobs": "workspace:^",
-    "@verus/observability": "workspace:^"
+    "@verus/observability": "workspace:^",
+    "pg": "8.23.0"
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@types/pg": "8.23.0",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
