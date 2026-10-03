@@ -180,6 +180,10 @@ catalogs:
 importers:
 
   .:
+    dependencies:
+      '@verus/detection':
+        specifier: workspace:^
+        version: link:packages/detection
     devDependencies:
       '@eslint/js':
         specifier: 10.0.1

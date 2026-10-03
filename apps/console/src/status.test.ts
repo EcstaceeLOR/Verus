@@ -6,7 +6,7 @@ describe("console status copy", () => {
   it("gives the operator a concrete next action when unavailable", () => {
     expect(statusCopy("unavailable")).toEqual({
       label: "Unavailable",
-      message: "Start the API, then check the connection again.",
+      message: "The hosted scanner could not be reached. Try again shortly.",
     });
   });
 });

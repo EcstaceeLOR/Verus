@@ -6,12 +6,12 @@ export interface StatusCopy {
 }
 
 const copy: Readonly<Record<ConnectionState, StatusCopy>> = Object.freeze({
-  idle: { label: "Not checked", message: "Check that your local Verus API is available." },
-  checking: { label: "Checking", message: "Contacting the local API…" },
-  ready: { label: "Connected", message: "Your Verus workspace is ready." },
+  idle: { label: "Not checked", message: "Check the hosted scanner service." },
+  checking: { label: "Checking", message: "Contacting the hosted scanner…" },
+  ready: { label: "Ready", message: "The hosted scanner is available." },
   unavailable: {
     label: "Unavailable",
-    message: "Start the API, then check the connection again.",
+    message: "The hosted scanner could not be reached. Try again shortly.",
   },
 });
 
