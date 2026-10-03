@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "request_id": "req_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "workspace_id": "ws_01ARZ3NDEKTSV4RRFFQ69G5FAW",
+  "submitted_at": "2026-10-03T12:00:00.000Z",
+  "idempotency_key": "public-api-example-001",
+  "provenance": {
+    "source_class": "user_supplied",
+    "submitted_by": "api-example"
+  },
+  "input": {
+    "kind": "text",
+    "text": "Market conditions remain stable.",
+    "media_type": "text/plain"
+  },
+  "extensions": {}
+}

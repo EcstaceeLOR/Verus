@@ -23,6 +23,7 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "@types/pg": "8.23.0",
+    "@verus/contracts": "workspace:^",
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

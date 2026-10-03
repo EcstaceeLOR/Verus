@@ -56,21 +56,27 @@ function parsePepper(value: string): SecretValue {
 
 const publicApiPepper = apiKeyPepper === undefined ? undefined : parsePepper(apiKeyPepper);
 const publicApiData = pool === undefined ? undefined : new PostgresPublicApiData(pool);
-const publicApi =
+const publicAuthenticator =
   publicApiData === undefined || publicApiPepper === undefined
     ? undefined
+    : new ApiKeyAuthenticator(publicApiData, publicApiPepper);
+const publicAdmission = new TenantQuotaAdmission(
+  Number.MAX_SAFE_INTEGER,
+  positiveInteger("VERUS_PUBLIC_API_WORKSPACE_LIMIT", 600),
+  positiveInteger("VERUS_PUBLIC_API_WINDOW_SECONDS", 60) * 1_000,
+);
+const publicLimiter = new FixedWindowRateLimiter(
+  positiveInteger("VERUS_PUBLIC_API_KEY_LIMIT", 120),
+  positiveInteger("VERUS_PUBLIC_API_WINDOW_SECONDS", 60) * 1_000,
+);
+const publicApi =
+  publicApiData === undefined || publicAuthenticator === undefined
+    ? undefined
     : createPublicApiHandler({
-        authenticator: new ApiKeyAuthenticator(publicApiData, publicApiPepper),
-        admission: new TenantQuotaAdmission(
-          Number.MAX_SAFE_INTEGER,
-          positiveInteger("VERUS_PUBLIC_API_WORKSPACE_LIMIT", 600),
-          positiveInteger("VERUS_PUBLIC_API_WINDOW_SECONDS", 60) * 1_000,
-        ),
+        authenticator: publicAuthenticator,
+        admission: publicAdmission,
         data: publicApiData,
-        limiter: new FixedWindowRateLimiter(
-          positiveInteger("VERUS_PUBLIC_API_KEY_LIMIT", 120),
-          positiveInteger("VERUS_PUBLIC_API_WINDOW_SECONDS", 60) * 1_000,
-        ),
+        limiter: publicLimiter,
       });
 const resolveInternalWorkspace = (request: IncomingMessage): string | undefined =>
   request.headers["x-verus-internal-token"] === internalToken ? internalWorkspace : undefined;
@@ -80,6 +86,15 @@ const ingestion =
     : createIngestionHandler({
         service: new IngestionService(pool),
         resolveWorkspace: resolveInternalWorkspace,
+        ...(publicAuthenticator === undefined
+          ? {}
+          : {
+              publicAuthorization: {
+                authenticator: publicAuthenticator,
+                admission: publicAdmission,
+                limiter: publicLimiter,
+              },
+            }),
       });
 const uploads =
   pool === undefined || quarantineDirectory === undefined

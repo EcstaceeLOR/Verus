@@ -5,11 +5,46 @@ info:
   description:
     Versioned, authenticated Context Firewall API. Source bytes are never returned by default.
 paths:
+  /v1/ingestions:
+    post:
+      operationId: submitIngestion
+      summary: Submit untrusted context for asynchronous inspection
+      description:
+        Accepts a versioned ingestion request and returns the addressable queued scan. Reusing an
+        idempotency key with the same request returns the original scan; reusing it with different
+        content fails with a conflict. Submitted hostile content is never included in the response.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/WorkspaceId" }
+      x-verus-required-scope: scan.create
+      x-verus-example-file: ./examples/ingestion-text.json
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IngestionRequest" }
+      responses:
+        "202":
+          description: A new scan was accepted and queued
+          headers:
+            Location: { schema: { type: string }, description: Address of the queued scan }
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/IngestionAccepted" } }
+        "200":
+          description: Idempotent replay of an existing scan
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/IngestionAccepted" } }
+        "400": { description: Contract or request-size validation failed }
+        "401": { description: Authentication required }
+        "403": { description: API key lacks scan.create or the workspace is unavailable }
+        "409": { description: Idempotency key is already bound to a different request }
+        "429": { description: Workspace quota or API-key rate limit exceeded }
   /v1/scans:
     get:
       summary: List scans
       security: [{ bearerAuth: [] }]
       parameters:
+        - { $ref: "#/components/parameters/WorkspaceId" }
         - {
             name: limit,
             in: query,
@@ -24,32 +59,127 @@ paths:
           "429": { description: Rate limited },
         }
   /v1/scans/{scan_id}:
+    parameters:
+      - { $ref: "#/components/parameters/ScanId" }
     get:
       {
         summary: Read scan status,
         security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/WorkspaceId" }],
         responses: { "200": { description: Scan status }, "404": { description: Not found } },
       }
   /v1/scans/{scan_id}/findings:
+    parameters:
+      - { $ref: "#/components/parameters/ScanId" }
     get:
       {
         summary: Read findings,
         security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/WorkspaceId" }],
         responses: { "200": { description: Findings } },
       }
   /v1/scans/{scan_id}/evidence:
+    parameters:
+      - { $ref: "#/components/parameters/ScanId" }
     get:
       {
         summary: Read evidence metadata,
         security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/WorkspaceId" }],
         responses: { "200": { description: Evidence } },
       }
   /v1/scans/{scan_id}/capsule:
+    parameters:
+      - { $ref: "#/components/parameters/ScanId" }
     get:
       {
         summary: Read signed Context Capsule,
         security: [{ bearerAuth: [] }],
+        parameters: [{ $ref: "#/components/parameters/WorkspaceId" }],
         responses: { "200": { description: Signed capsule } },
       }
 components:
+  parameters:
+    ScanId:
+      name: scan_id
+      in: path
+      required: true
+      schema: { type: string, pattern: "^scan_[0-9A-HJKMNP-TV-Z]{26}$" }
+    WorkspaceId:
+      name: X-Verus-Workspace-Id
+      in: header
+      required: true
+      description: Workspace bound to the bearer API key
+      schema: { type: string, pattern: "^ws_[0-9A-HJKMNP-TV-Z]{26}$" }
+  schemas:
+    IngestionAccepted:
+      type: object
+      required: [scan_id, state, idempotent_replay, correlation_id]
+      properties:
+        scan_id: { type: string, pattern: "^scan_[0-9A-HJKMNP-TV-Z]{26}$" }
+        state: { enum: [queued] }
+        idempotent_replay: { type: boolean }
+        correlation_id: { type: string }
+      additionalProperties: false
+    IngestionRequest:
+      type: object
+      required:
+        [
+          schema_version,
+          request_id,
+          workspace_id,
+          submitted_at,
+          idempotency_key,
+          provenance,
+          input,
+          extensions,
+        ]
+      properties:
+        schema_version: { const: "1.0" }
+        request_id: { type: string, pattern: "^req_[0-9A-HJKMNP-TV-Z]{26}$" }
+        workspace_id: { type: string, pattern: "^ws_[0-9A-HJKMNP-TV-Z]{26}$" }
+        submitted_at: { type: string, format: date-time }
+        idempotency_key: { type: string, pattern: "^[A-Za-z0-9][A-Za-z0-9_.:-]{7,127}$" }
+        provenance:
+          type: object
+          required: [source_class, submitted_by]
+          properties:
+            source_class: { enum: [primary, secondary, user_supplied, unknown] }
+            submitted_by: { type: string, minLength: 1, maxLength: 128 }
+            asserted_origin: { type: string, pattern: "^https://", maxLength: 2048 }
+          additionalProperties: false
+        input:
+          oneOf:
+            - type: object
+              required: [kind, url]
+              properties:
+                kind: { const: url }
+                url: { type: string, pattern: "^https://", maxLength: 2048 }
+              additionalProperties: false
+            - type: object
+              required: [kind, text, media_type]
+              properties:
+                kind: { const: text }
+                text: { type: string, minLength: 1, maxLength: 1000000 }
+                media_type: { enum: [text/plain, text/html, application/xml, application/json] }
+              additionalProperties: false
+            - type: object
+              required: [kind, upload_id, media_type, size_bytes, digest]
+              properties:
+                kind: { const: upload }
+                upload_id: { type: string }
+                media_type: { type: string, minLength: 1, maxLength: 255 }
+                size_bytes: { type: integer, minimum: 1 }
+                digest: { type: string, pattern: "^sha256:[0-9a-f]{64}$" }
+              additionalProperties: false
+            - type: object
+              required: [kind, source_id, event_id, payload_digest]
+              properties:
+                kind: { const: feed_event }
+                source_id: { type: string }
+                event_id: { type: string, minLength: 1, maxLength: 256 }
+                payload_digest: { type: string, pattern: "^sha256:[0-9a-f]{64}$" }
+              additionalProperties: false
+        extensions: { type: object }
+      additionalProperties: false
   securitySchemes: { bearerAuth: { type: http, scheme: bearer } }
