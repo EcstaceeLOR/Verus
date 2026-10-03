@@ -26,6 +26,16 @@ export interface JobCompletionPort {
   }): Promise<unknown>;
 }
 
+export interface JobClaimPort extends JobCompletionPort {
+  claim(input: {
+    readonly workspaceId: string;
+    readonly queue: string;
+    readonly workerId: string;
+    readonly supportedEnvelopeVersions: readonly number[];
+    readonly leaseMs: number;
+  }): Promise<ClaimedJob | undefined>;
+}
+
 export interface ScanProcessPort {
   process(
     input: Readonly<{ workspaceId: string; scanId: string }>,
@@ -70,6 +80,29 @@ export function createSignedScanProcessHandler(
   processor: SignedScanProcessingService,
 ): (job: ClaimedJob) => Promise<JobExecutionOutcome> {
   return createScanProcessHandler(processor);
+}
+
+/** Claims and executes at most one job, enabling a controlled polling loop and graceful shutdown. */
+export async function runWorkerOnce(
+  input: Readonly<{
+    queue: JobClaimPort;
+    workspaceId: string;
+    workerId: string;
+    handler: (job: ClaimedJob) => Promise<JobExecutionOutcome>;
+    logger: StructuredLogger;
+    leaseMs?: number;
+  }>,
+): Promise<Readonly<{ claimed: boolean }>> {
+  const job = await input.queue.claim({
+    workspaceId: input.workspaceId,
+    queue: "trusted",
+    workerId: input.workerId,
+    supportedEnvelopeVersions: [1],
+    leaseMs: input.leaseMs ?? 60_000,
+  });
+  if (job === undefined) return Object.freeze({ claimed: false });
+  await executeClaimedJob(job, input.queue, input.handler, input.logger);
+  return Object.freeze({ claimed: true });
 }
 
 export async function executeClaimedJob(
