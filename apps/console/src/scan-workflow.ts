@@ -31,6 +31,62 @@ export interface HostedScanResult {
   readonly processedAt: string;
 }
 
+export interface VerdictPresentation {
+  readonly title: string;
+  readonly symbol: "✓" | "!" | "×";
+  readonly guidance: string;
+}
+
+export interface FindingPresentation {
+  readonly label: string;
+  readonly explanation: string;
+}
+
+export function verdictPresentation(
+  disposition: HostedScanResult["disposition"],
+): VerdictPresentation {
+  if (disposition === "allow") {
+    return { title: "Context can proceed", symbol: "✓", guidance: "No configured attack pattern matched." };
+  }
+  if (disposition === "review") {
+    return {
+      title: "Hold for human review",
+      symbol: "!",
+      guidance: "Do not automate this input without a person checking it.",
+    };
+  }
+  return {
+    title: "Context stopped",
+    symbol: "×",
+    guidance: "Do not pass this context to a trading agent.",
+  };
+}
+
+export function findingPresentation(reasonCode: string): FindingPresentation {
+  const known: Readonly<Record<string, FindingPresentation>> = {
+    DIRECT_INSTRUCTION_OVERRIDE: {
+      label: "Instruction override detected",
+      explanation: "The text tries to replace or ignore the agent’s existing instructions.",
+    },
+    CREDENTIAL_EXFILTRATION: {
+      label: "Credential theft request detected",
+      explanation: "The text asks for a secret, token, API key, or other credential.",
+    },
+    TOOL_COERCION: {
+      label: "Tool coercion detected",
+      explanation: "The text tries to force the agent to call a tool or take an external action.",
+    },
+    SOURCE_IMPERSONATION: {
+      label: "Source impersonation detected",
+      explanation: "The text claims authority it cannot establish.",
+    },
+  };
+  return known[reasonCode] ?? {
+    label: reasonCode.replaceAll("_", " ").toLowerCase(),
+    explanation: "The text matched a configured context-safety rule.",
+  };
+}
+
 function record(value: unknown): Record<string, unknown> | undefined {
   return typeof value === "object" && value !== null && !Array.isArray(value)
     ? (value as Record<string, unknown>)
