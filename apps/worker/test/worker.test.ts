@@ -5,8 +5,11 @@ import { describe, expect, it } from "vitest";
 import {
   createScanProcessHandler,
   executeClaimedJob,
+  runWorkerOnce,
   type JobCompletionPort,
+  type JobClaimPort,
 } from "../src/index.js";
+import { runWorkerPollLoop } from "../src/runtime.js";
 
 const job = Object.freeze({
   workspaceId: "ws_01ARZ3NDEKTSV4RRFFQ69G5FC0",
@@ -77,5 +80,53 @@ describe("worker telemetry composition", () => {
       job.correlationId,
       job.correlationId,
     ]);
+  });
+
+  it("claims no more than one durable job per polling operation", async () => {
+    const completed: unknown[] = [];
+    const queue: JobClaimPort = {
+      claim: async () => job,
+      complete: async (input) => {
+        completed.push(input);
+      },
+      fail: async () => undefined,
+    };
+    const logger = new StructuredLogger("verus-worker", { sink: () => undefined });
+    const result = await runWorkerOnce({
+      queue,
+      workspaceId: job.workspaceId,
+      workerId: "worker-test",
+      logger,
+      handler: async () => ({
+        kind: "completed",
+        resultRef: `object://sha256/${"c".repeat(64)}`,
+        resultDigest: `sha256:${"c".repeat(64)}`,
+      }),
+    });
+    expect(result).toEqual({ claimed: true });
+    expect(completed).toHaveLength(1);
+  });
+
+  it("backs off while idle and stops without another claim after cancellation", async () => {
+    const controller = new AbortController();
+    const waits: number[] = [];
+    let claims = 0;
+    const logger = new StructuredLogger("verus-worker", { sink: () => undefined });
+    await runWorkerPollLoop({
+      signal: controller.signal,
+      logger,
+      idleIntervalMs: 7,
+      pollIntervalMs: 3,
+      runOnce: async () => {
+        claims += 1;
+        return { claimed: false };
+      },
+      wait: async (milliseconds) => {
+        waits.push(milliseconds);
+        controller.abort();
+      },
+    });
+    expect(claims).toBe(1);
+    expect(waits).toEqual([7]);
   });
 });
