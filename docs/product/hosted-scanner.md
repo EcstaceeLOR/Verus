@@ -26,9 +26,9 @@ The safe and attack examples exercise the real hosted scan endpoint; they are no
 
 ## UI maintenance
 
-Product language and decision guidance live in `apps/console/src/scan-workflow.ts` and are covered by
-unit tests. Shared visual tokens and responsive behavior live in `apps/console/src/styles.css`. The
-logo is a native SVG component and favicon, so it requires no external font, image, or tracking
+Product language and decision guidance live in `apps/console/src/scan-workflow.ts` and are covered
+by unit tests. Shared visual tokens and responsive behavior live in `apps/console/src/styles.css`.
+The logo is a native SVG component and favicon, so it requires no external font, image, or tracking
 request.
 
 This release changes no persisted server state and requires no migration. Rollback is the previous

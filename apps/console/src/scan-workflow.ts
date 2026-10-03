@@ -46,7 +46,11 @@ export function verdictPresentation(
   disposition: HostedScanResult["disposition"],
 ): VerdictPresentation {
   if (disposition === "allow") {
-    return { title: "Context can proceed", symbol: "✓", guidance: "No configured attack pattern matched." };
+    return {
+      title: "Context can proceed",
+      symbol: "✓",
+      guidance: "No configured attack pattern matched.",
+    };
   }
   if (disposition === "review") {
     return {
@@ -81,10 +85,12 @@ export function findingPresentation(reasonCode: string): FindingPresentation {
       explanation: "The text claims authority it cannot establish.",
     },
   };
-  return known[reasonCode] ?? {
-    label: reasonCode.replaceAll("_", " ").toLowerCase(),
-    explanation: "The text matched a configured context-safety rule.",
-  };
+  return (
+    known[reasonCode] ?? {
+      label: reasonCode.replaceAll("_", " ").toLowerCase(),
+      explanation: "The text matched a configured context-safety rule.",
+    }
+  );
 }
 
 function record(value: unknown): Record<string, unknown> | undefined {
