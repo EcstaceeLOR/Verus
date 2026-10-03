@@ -43,8 +43,7 @@ responsibility split is in the
 
 - [Ingestion](operations/ingestion.md), [upload quarantine](operations/upload-quarantine.md), and
   [retrieval quarantine](operations/retrieval-quarantine.md)
-- [Durable jobs](operations/durable-jobs.md),
-  [trusted worker](operations/trusted-worker.md),
+- [Durable jobs](operations/durable-jobs.md), [trusted worker](operations/trusted-worker.md),
   [capacity and resilience](operations/capacity-and-resilience.md), and
   [observability](operations/observability.md)
 - [Database operations](operations/database.md), [recovery](operations/recovery.md), and
