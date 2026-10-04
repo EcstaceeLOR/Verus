@@ -66,7 +66,31 @@ paths:
         summary: Read scan status,
         security: [{ bearerAuth: [] }],
         parameters: [{ $ref: "#/components/parameters/WorkspaceId" }],
-        responses: { "200": { description: Scan status }, "404": { description: Not found } },
+        responses:
+          {
+            "200":
+              {
+                description: Scan status,
+                content:
+                  {
+                    application/json:
+                      {
+                        schema:
+                          {
+                            type: object,
+                            required: [data, correlation_id],
+                            properties:
+                              {
+                                data: { $ref: "#/components/schemas/ScanRecord" },
+                                correlation_id: { type: string },
+                              },
+                            additionalProperties: false,
+                          },
+                      },
+                  },
+              },
+            "404": { description: Not found },
+          },
       }
   /v1/scans/{scan_id}/findings:
     parameters:
@@ -112,6 +136,18 @@ components:
       description: Workspace bound to the bearer API key
       schema: { type: string, pattern: "^ws_[0-9A-HJKMNP-TV-Z]{26}$" }
   schemas:
+    ScanRecord:
+      type: object
+      required: [scan_id, request_id, input_digest, state, state_version, created_at, updated_at]
+      properties:
+        scan_id: { type: string, pattern: "^scan_[0-9A-HJKMNP-TV-Z]{26}$" }
+        request_id: { type: string, pattern: "^req_[0-9A-HJKMNP-TV-Z]{26}$" }
+        input_digest: { type: string, pattern: "^sha256:[0-9a-f]{64}$" }
+        state: { enum: [accepted, queued, processing, allowed, review, blocked, failed, cancelled] }
+        state_version: { type: integer, minimum: 0 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+      additionalProperties: false
     IngestionAccepted:
       type: object
       required: [scan_id, state, idempotent_replay, correlation_id]

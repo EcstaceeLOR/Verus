@@ -16,4 +16,16 @@ describe("published OpenAPI examples", () => {
     expect(openapi).toContain("/v1/ingestions:");
     expect(openapi).toContain("x-verus-example-file: ./examples/ingestion-text.json");
   });
+
+  it("keeps the shared scan artifact represented in the published response schema", async () => {
+    const fixture = JSON.parse(
+      await readFile(
+        resolve(root, "contracts/v1/fixtures/valid/interface-scan-record.json"),
+        "utf8",
+      ),
+    ) as Record<string, unknown>;
+    const openapi = await readFile(resolve(root, "docs/api/openapi.v1.yaml"), "utf8");
+    expect(openapi).toContain('data: { $ref: "#/components/schemas/ScanRecord" }');
+    for (const field of Object.keys(fixture)) expect(openapi).toContain(`${field}:`);
+  });
 });
