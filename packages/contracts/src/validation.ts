@@ -19,7 +19,7 @@ const schemaFiles = [
 ] as const;
 
 function schemaDirectory(): URL {
-  const bundled = new URL("../schema/v1/", import.meta.url);
+  const bundled = new URL("./schema/v1/", import.meta.url);
   return existsSync(fileURLToPath(bundled))
     ? bundled
     : new URL("../../../contracts/v1/", import.meta.url);
