@@ -1,21 +1,33 @@
 {
   "name": "@verus/sdk",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "description": "Typed Verus TypeScript client.",
+  "license": "Apache-2.0",
   "type": "module",
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "exports": {
     ".": {
-      "types": "./src/index.ts",
+      "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     }
   },
   "bin": {
     "verus": "./dist/cli.js"
   },
+  "engines": {
+    "node": ">=24.19.0 <25"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint src test",
+    "prepack": "corepack pnpm --filter @verus/sdk... build",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
@@ -23,6 +35,10 @@
     "@verus/contracts": "workspace:^",
     "@verus/crypto": "workspace:^"
   },
+  "bundledDependencies": [
+    "@verus/contracts",
+    "@verus/crypto"
+  ],
   "devDependencies": {
     "typescript": "catalog:",
     "vitest": "catalog:"
