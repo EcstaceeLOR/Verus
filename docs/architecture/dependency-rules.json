@@ -43,6 +43,16 @@
       "id": "model_gateway",
       "layer": "composition",
       "capabilities": ["provider_network", "provider_secret"]
+    },
+    {
+      "id": "bitget",
+      "layer": "composition",
+      "capabilities": ["exchange_network", "exchange_secret"]
+    },
+    {
+      "id": "webhooks",
+      "layer": "composition",
+      "capabilities": ["postgres", "public_network", "webhook_secret"]
     }
   ],
   "edges": [
@@ -121,6 +131,27 @@
       "forbidden": [
         "public_network",
         "postgres",
+        "object_store",
+        "signing_key",
+        "exchange_secret",
+        "tool_execution"
+      ]
+    },
+    {
+      "node": "bitget",
+      "forbidden": [
+        "public_network",
+        "provider_network",
+        "postgres",
+        "object_store",
+        "signing_key",
+        "tool_execution"
+      ]
+    },
+    {
+      "node": "webhooks",
+      "forbidden": [
+        "provider_network",
         "object_store",
         "signing_key",
         "exchange_secret",

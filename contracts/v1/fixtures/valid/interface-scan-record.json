@@ -1,0 +1,9 @@
+{
+  "scan_id": "scan_01ARZ3NDEKTSV4RRFFQ69G5FAZ",
+  "request_id": "req_01ARZ3NDEKTSV4RRFFQ69G5FAY",
+  "input_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "state": "review",
+  "state_version": 4,
+  "created_at": "2026-10-04T08:00:00.000Z",
+  "updated_at": "2026-10-04T08:00:04.000Z"
+}

@@ -1,4 +1,6 @@
 import { createServer } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
+import { PassThrough } from "node:stream";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -9,6 +11,10 @@ import {
 import { getDefaultEnvironment, StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import scanFixture from "../../../contracts/v1/fixtures/valid/interface-scan-record.json" with { type: "json" };
+import { run as runCli } from "../../../packages/sdk/src/cli.js";
+import { VerusClient } from "../../../packages/sdk/src/index.js";
+import { createPublicApiHandler } from "../../api/src/public-api.js";
 import { loadHttpRuntimeConfig, loadRuntimeConfig } from "../src/config.js";
 import { createVerusMcpHttpHandler } from "../src/http.js";
 import { createApiMcpService, createVerusMcpServer, type McpService } from "../src/index.js";
@@ -91,6 +97,99 @@ describe("Verus MCP server", () => {
     await client.callTool({ name: "verus_capsule", arguments: { scan_id: "scan_1" } });
     expect(events).toMatchObject([{ tool: "capsule", outcome: "success" }]);
     expect(JSON.stringify(events)).not.toContain("scan_1");
+  });
+});
+
+describe("shared public-interface conformance", () => {
+  it("returns one semantic scan artifact through REST, SDK, CLI, and MCP", async () => {
+    const handler = createPublicApiHandler({
+      authenticator: {
+        authenticate: async () => ({
+          keyId: "key_conformance",
+          scopes: ["scan.read"],
+          workspaceId: "ws_conformance",
+        }),
+      },
+      data: {
+        getCapsule: async () => undefined,
+        getEvidence: async () => undefined,
+        getFindings: async () => undefined,
+        getScan: async () => ({ ...scanFixture, raw_content: "must never cross an interface" }),
+        listScans: async () => ({ items: [scanFixture] }),
+      },
+      limiter: { check: async () => ({ allowed: true }) },
+    });
+    const apiFetch: typeof fetch = async (input, init) => {
+      const url = new URL(input instanceof Request ? input.url : input.toString());
+      const request = Object.assign(new PassThrough(), {
+        headers: Object.fromEntries(new Headers(init?.headers)),
+        method: init?.method ?? "GET",
+        url: `${url.pathname}${url.search}`,
+      }) as unknown as IncomingMessage;
+      const chunks: Buffer[] = [];
+      const responseHeaders = new Headers();
+      const response = {
+        end: (body: string) => chunks.push(Buffer.from(body)),
+        setHeader: (name: string, value: string) => responseHeaders.set(name, value),
+        statusCode: 0,
+        writeHead: (status: number, headers?: Record<string, string>) => {
+          response.statusCode = status;
+          for (const [name, value] of Object.entries(headers ?? {}))
+            responseHeaders.set(name, value);
+        },
+      } as unknown as ServerResponse & { statusCode: number };
+      await handler(request, response, {
+        correlationId: "corr_conformance",
+        spanId: "span_conformance",
+        traceFlags: "01",
+        traceId: "trace_conformance",
+      });
+      return new Response(Buffer.concat(chunks), {
+        headers: responseHeaders,
+        status: response.statusCode,
+      });
+    };
+    const base = {
+      apiKey: "conformance-secret",
+      baseUrl: "https://api.verus.test",
+      fetch: apiFetch,
+      workspaceId: "ws_conformance",
+    };
+
+    const restEnvelope = (await (
+      await apiFetch(`https://api.verus.test/v1/scans/${scanFixture.scan_id}`)
+    ).json()) as { data: unknown };
+    const sdk = await new VerusClient(base).status(scanFixture.scan_id);
+    const cliOutput: unknown[] = [];
+    const cliExit = await runCli(
+      ["status", scanFixture.scan_id],
+      (value) => cliOutput.push(value),
+      {
+        env: {
+          VERUS_API_KEY: base.apiKey,
+          VERUS_API_URL: base.baseUrl,
+          VERUS_WORKSPACE_ID: base.workspaceId,
+        },
+        fetch: apiFetch,
+      },
+    );
+    const client = await inMemoryClient(createApiMcpService(base));
+    const mcpResult = await client.callTool({
+      arguments: { scan_id: scanFixture.scan_id },
+      name: "verus_status",
+    });
+    const content = mcpResult.content[0];
+    if (content?.type !== "text") throw new Error("MCP did not return a text artifact.");
+    const mcp = JSON.parse(content.text) as unknown;
+
+    expect(cliExit).toBe(2);
+    expect([restEnvelope.data, sdk, cliOutput[0], mcp]).toEqual([
+      scanFixture,
+      scanFixture,
+      scanFixture,
+      scanFixture,
+    ]);
+    expect(JSON.stringify([restEnvelope.data, sdk, cliOutput[0], mcp])).not.toContain("must never");
   });
 });
 

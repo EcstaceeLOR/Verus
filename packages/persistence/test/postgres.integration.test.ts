@@ -68,12 +68,12 @@ describe("PostgreSQL persistence", () => {
     });
     expect(fresh).toMatchObject({
       fromVersion: 0,
-      toVersion: 9,
-      appliedVersions: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+      toVersion: 10,
+      appliedVersions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     });
 
     const existing = await migrate(adminPool);
-    expect(existing).toMatchObject({ fromVersion: 9, toVersion: 9, appliedVersions: [] });
+    expect(existing).toMatchObject({ fromVersion: 10, toVersion: 10, appliedVersions: [] });
 
     const tables = await adminPool.query<{ table_name: string }>(
       `SELECT table_name FROM information_schema.tables
@@ -82,9 +82,9 @@ describe("PostgreSQL persistence", () => {
           'jobs', 'key_metadata', 'audit_events', 'outbox_events', 'identities',
           'memberships', 'invitations', 'service_accounts', 'authorization_sessions',
           'api_keys', 'secret_metadata', 'job_attempts', 'job_results', 'ingestion_envelopes',
-          'quarantine_uploads', 'content_snapshots', 'context_capsules')`,
+          'quarantine_uploads', 'content_snapshots', 'context_capsules', 'webhook_deliveries')`,
     );
-    expect(tables.rows).toHaveLength(22);
+    expect(tables.rows).toHaveLength(23);
     const forced = await adminPool.query<{ relforcerowsecurity: boolean; relrowsecurity: boolean }>(
       `SELECT relrowsecurity, relforcerowsecurity FROM pg_class
        WHERE relname = 'scans'`,
@@ -123,11 +123,11 @@ describe("PostgreSQL persistence", () => {
       migrate(adminPool, { targetVersion: 6, migrations: [...base, repaired] }),
     ).resolves.toMatchObject({
       toVersion: 6,
-      appliedVersions: [interruptedVersion, 9, 8, 7],
+      appliedVersions: [interruptedVersion, 10, 9, 8, 7],
     });
     await expect(migrate(adminPool)).resolves.toMatchObject({
-      toVersion: 9,
-      appliedVersions: [7, 8, 9],
+      toVersion: 10,
+      appliedVersions: [7, 8, 9, 10],
     });
   });
 
@@ -554,15 +554,15 @@ describe("PostgreSQL persistence", () => {
     appPool = undefined;
     const down = await migrate(adminPool, { targetVersion: 0 });
     expect(down).toMatchObject({
-      fromVersion: 9,
+      fromVersion: 10,
       toVersion: 0,
-      appliedVersions: [9, 8, 7, 6, 5, 4, 3, 2, 1],
+      appliedVersions: [10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
     });
     const up = await migrate(adminPool);
     expect(up).toMatchObject({
       fromVersion: 0,
-      toVersion: 9,
-      appliedVersions: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+      toVersion: 10,
+      appliedVersions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     });
   });
 });
