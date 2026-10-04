@@ -1,101 +1,213 @@
-import { createInterface } from "node:readline";
-import type { Readable, Writable } from "node:stream";
+import { McpServer, type CallToolResult } from "@modelcontextprotocol/server";
+import type { ContextCapsule, IngestionRequest } from "@verus/contracts";
+import { toProblemDetails, VerusError } from "@verus/domain";
+import { VerusClient } from "@verus/sdk";
+import { z } from "zod/v4";
 
-import { VerusError, toProblemDetails } from "@verus/domain";
+const identifier = z.string().min(3).max(128);
+const digest = z.string().regex(/^sha256:[0-9a-f]{64}$/);
+const httpsUrl = z.string().url().startsWith("https://").max(2048);
+const textInput = z.object({
+  kind: z.literal("text"),
+  text: z.string().min(1).max(1_000_000),
+  media_type: z.enum(["text/plain", "text/html", "application/xml", "application/json"]),
+});
+const urlInput = z.object({ kind: z.literal("url"), url: httpsUrl });
+const uploadInput = z.object({
+  kind: z.literal("upload"),
+  upload_id: identifier,
+  media_type: z.string().min(1).max(255),
+  size_bytes: z.number().int().positive(),
+  digest,
+});
+const feedInput = z.object({
+  kind: z.literal("feed_event"),
+  source_id: identifier,
+  event_id: z.string().min(1).max(256),
+  payload_digest: digest,
+});
 
-export interface McpAuthorization {
-  readonly workspaceId: string;
-  readonly token: string;
-}
+export const ingestionRequestSchema = z.object({
+  schema_version: z.literal("1.0"),
+  request_id: identifier,
+  workspace_id: identifier,
+  submitted_at: z.string().datetime(),
+  idempotency_key: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_.:-]{7,127}$/),
+  provenance: z.object({
+    source_class: z.enum(["primary", "secondary", "user_supplied", "unknown"]),
+    submitted_by: z.string().min(1).max(128),
+    asserted_origin: httpsUrl.optional(),
+  }),
+  input: z.discriminatedUnion("kind", [textInput, urlInput, uploadInput, feedInput]),
+  extensions: z.record(z.string(), z.unknown()),
+});
+
+const capsuleSchema = z.record(z.string(), z.unknown());
+const rawContentKeys = new Set(["content", "raw_content", "parsed_text", "excerpt", "text"]);
+
 export interface McpService {
-  submit(input: Readonly<{ authorization: McpAuthorization; request: unknown }>): Promise<unknown>;
-  status(input: Readonly<{ authorization: McpAuthorization; scanId: string }>): Promise<unknown>;
-  capsule(input: Readonly<{ authorization: McpAuthorization; scanId: string }>): Promise<unknown>;
-  verify(input: Readonly<{ authorization: McpAuthorization; capsule: unknown }>): Promise<unknown>;
+  submit(request: IngestionRequest): Promise<unknown>;
+  status(scanId: string): Promise<unknown>;
+  capsule(scanId: string): Promise<unknown>;
+  verify(capsule: ContextCapsule): Promise<unknown>;
 }
-export type McpRequest = Readonly<{
-  jsonrpc: "2.0";
-  id?: string | number;
-  method: string;
-  params?: unknown;
-}>;
-const tools = Object.freeze([
-  {
-    name: "verus_submit",
-    description: "Submit a scan request through Verus policy and authorization checks.",
-  },
-  {
-    name: "verus_status",
-    description: "Read the safe status of a Verus scan; source content is never returned.",
-  },
-  {
-    name: "verus_capsule",
-    description: "Retrieve a signed Context Capsule for a scan after authorization.",
-  },
-  {
-    name: "verus_verify",
-    description: "Verify a Context Capsule signature without accessing source content.",
-  },
-]);
-function auth(value: unknown): McpAuthorization {
-  const input = value as { authorization?: McpAuthorization };
-  if (!input?.authorization?.workspaceId || !input.authorization.token)
-    throw new VerusError("AUTHENTICATION_REQUIRED", "MCP authorization is required.");
-  return input.authorization;
+
+export interface McpTelemetryEvent {
+  readonly tool: "submit" | "status" | "capsule" | "verify";
+  readonly outcome: "success" | "failure";
+  readonly durationMs: number;
 }
-function safe(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(safe);
-  if (value && typeof value === "object")
+
+export interface McpServerOptions {
+  readonly onTelemetry?: (event: McpTelemetryEvent) => void;
+}
+
+export interface ApiMcpServiceOptions {
+  readonly baseUrl: string;
+  readonly apiKey: string;
+  readonly workspaceId: string;
+  readonly fetch?: typeof globalThis.fetch;
+  readonly retries?: number;
+  readonly signingKeys?: Parameters<VerusClient["verifyOffline"]>[1];
+}
+
+export function createApiMcpService(options: ApiMcpServiceOptions): McpService {
+  const client = new VerusClient(options);
+  return Object.freeze({
+    submit: (request: IngestionRequest) => {
+      if (request.workspace_id !== options.workspaceId) {
+        return Promise.reject(
+          new VerusError("AUTHORIZATION_DENIED", "Request workspace does not match authorization."),
+        );
+      }
+      return client.scan(request);
+    },
+    status: (scanId: string) => client.status(scanId),
+    capsule: (scanId: string) => client.capsule(scanId),
+    verify: (capsule: ContextCapsule) => client.verifyOffline(capsule, options.signingKeys ?? []),
+  });
+}
+
+export function createVerusMcpServer(
+  service: McpService,
+  options: McpServerOptions = {},
+): McpServer {
+  const server = new McpServer(
+    { name: "verus", version: "1.0.0" },
+    { capabilities: { tools: { listChanged: false } } },
+  );
+
+  server.registerTool(
+    "verus_submit",
+    {
+      title: "Submit context to Verus",
+      description:
+        "Submit untrusted context for Verus inspection. The response never includes submitted source content.",
+      inputSchema: z.object({ request: ingestionRequestSchema }),
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async ({ request }) =>
+      runTool("submit", options, () => service.submit(request as IngestionRequest)),
+  );
+
+  server.registerTool(
+    "verus_status",
+    {
+      title: "Inspect scan status",
+      description:
+        "Read the safe status and verdict metadata for a Verus scan. Source content is never returned.",
+      inputSchema: z.object({ scan_id: identifier }),
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async ({ scan_id }) => runTool("status", options, () => service.status(scan_id)),
+  );
+
+  server.registerTool(
+    "verus_capsule",
+    {
+      title: "Retrieve Context Capsule",
+      description:
+        "Retrieve the signed, raw-content-free Context Capsule authorized for a completed Verus scan.",
+      inputSchema: z.object({ scan_id: identifier }),
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async ({ scan_id }) => runTool("capsule", options, () => service.capsule(scan_id)),
+  );
+
+  server.registerTool(
+    "verus_verify",
+    {
+      title: "Verify Context Capsule",
+      description:
+        "Verify a Context Capsule signature with configured public keys. Verification does not access source content.",
+      inputSchema: z.object({ capsule: capsuleSchema }),
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async ({ capsule }) =>
+      runTool("verify", options, () => service.verify(capsule as unknown as ContextCapsule)),
+  );
+
+  return server;
+}
+
+async function runTool(
+  tool: McpTelemetryEvent["tool"],
+  options: McpServerOptions,
+  operation: () => Promise<unknown>,
+): Promise<CallToolResult> {
+  const started = performance.now();
+  try {
+    const value = sanitize(await operation());
+    options.onTelemetry?.({ tool, outcome: "success", durationMs: performance.now() - started });
+    return { content: [{ type: "text", text: stringify(value) }] };
+  } catch (error) {
+    options.onTelemetry?.({ tool, outcome: "failure", durationMs: performance.now() - started });
+    return {
+      isError: true,
+      content: [{ type: "text", text: stringify(sanitize(toProblemDetails(error))) }],
+    };
+  }
+}
+
+function sanitize(value: unknown, depth = 0): unknown {
+  if (depth > 12) return "[depth-limited]";
+  if (Array.isArray(value)) return value.slice(0, 1_000).map((child) => sanitize(child, depth + 1));
+  if (value && typeof value === "object") {
     return Object.fromEntries(
       Object.entries(value as Record<string, unknown>)
-        .filter(([key]) => !["content", "raw_content", "parsed_text", "excerpt"].includes(key))
-        .map(([key, child]) => [key, safe(child)]),
+        .filter(([key]) => !rawContentKeys.has(key.toLowerCase()))
+        .slice(0, 1_000)
+        .map(([key, child]) => [key, sanitize(child, depth + 1)]),
     );
-  return value;
+  }
+  if (["string", "number", "boolean"].includes(typeof value) || value === null) return value;
+  return String(value);
 }
-function text(value: unknown) {
-  return { content: [{ type: "text", text: JSON.stringify(safe(value)) }] };
-}
-export function createMcpServer(service: McpService) {
-  return async (request: McpRequest): Promise<unknown> => {
-    try {
-      if (request.jsonrpc !== "2.0")
-        throw new VerusError("CONTRACT_VALIDATION_FAILED", "MCP uses JSON-RPC 2.0.");
-      if (request.method === "initialize")
-        return {
-          protocolVersion: "2025-06-18",
-          serverInfo: { name: "verus", version: "1.0.0" },
-          capabilities: { tools: {} },
-        };
-      if (request.method === "tools/list") return { tools };
-      if (request.method !== "tools/call")
-        throw new VerusError("NOT_FOUND", "MCP method is unavailable.");
-      const params = request.params as { name?: string; arguments?: Record<string, unknown> };
-      const authorization = auth(params.arguments);
-      const args = params.arguments ?? {};
-      if (params.name === "verus_submit")
-        return text(await service.submit({ authorization, request: args.request }));
-      if (params.name === "verus_status")
-        return text(await service.status({ authorization, scanId: String(args.scan_id ?? "") }));
-      if (params.name === "verus_capsule")
-        return text(await service.capsule({ authorization, scanId: String(args.scan_id ?? "") }));
-      if (params.name === "verus_verify")
-        return text(await service.verify({ authorization, capsule: args.capsule }));
-      throw new VerusError("NOT_FOUND", "MCP tool is unavailable.");
-    } catch (error) {
-      return { isError: true, ...text(toProblemDetails(error)) };
-    }
-  };
-}
-/** Newline-delimited JSON-RPC stdio transport for local agent hosts. */
-export function runStdio(
-  server: ReturnType<typeof createMcpServer>,
-  input: Readable = process.stdin,
-  output: Writable = process.stdout,
-): void {
-  createInterface({ input, crlfDelay: Infinity }).on("line", (line) => {
-    void Promise.resolve().then(async () =>
-      output.write(`${JSON.stringify(await server(JSON.parse(line) as McpRequest))}\n`),
-    );
-  });
+
+function stringify(value: unknown): string {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return JSON.stringify({ error: "RESULT_SERIALIZATION_FAILED" });
+  }
 }
