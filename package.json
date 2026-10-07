@@ -12,16 +12,16 @@
   },
   "scripts": {
     "build": "node scripts/run-turbo.mjs run build",
-    "check": "corepack pnpm run format:check && corepack pnpm run lint && corepack pnpm run typecheck:vercel && corepack pnpm run test:vercel && node scripts/run-turbo.mjs run typecheck test build && corepack pnpm run verify",
+    "check": "corepack pnpm run format:check && corepack pnpm run lint && corepack pnpm run typecheck:vercel && corepack pnpm run test:vercel && corepack pnpm --filter @verus/console run test:accessibility && node scripts/run-turbo.mjs run typecheck test build --concurrency=2 && corepack pnpm run verify",
     "dev": "node scripts/run-turbo.mjs run dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "infra:down": "docker compose --env-file .env.example -f deploy/compose/compose.yml down",
     "infra:up": "docker compose --env-file .env.example -f deploy/compose/compose.yml up -d --wait",
     "lint": "eslint eslint.config.mjs scripts api .github/*.mjs docs/**/*.mjs contracts/**/*.mjs && markdownlint-cli2 \"**/*.md\" && node scripts/run-turbo.mjs run lint",
-    "test": "node scripts/run-turbo.mjs run test",
+    "test": "corepack pnpm --filter @verus/console run test:accessibility && node scripts/run-turbo.mjs run test",
     "test:artifacts": "node scripts/collect-test-artifacts.mjs",
-    "test:vercel": "vitest run test/hosted-scan.test.ts",
+    "test:vercel": "vitest run test/hosted-scan.test.ts test/control-plane.test.ts",
     "typecheck": "node scripts/run-turbo.mjs run typecheck",
     "typecheck:vercel": "tsc -p api/tsconfig.json --noEmit",
     "verify": "node scripts/verify-workspace.mjs && node .github/verify-governance.mjs && node docs/architecture/verify-dependencies.mjs && node docs/security/verify-data-handling.mjs && node contracts/v1/verify-canonicalization.mjs && node contracts/v1/verify-policy-vectors.mjs && node corpus/v1/verify-corpus.mjs && node corpus/v1/evaluate-detection.mjs && node scripts/verify-infrastructure.mjs && node scripts/verify-release-qualification.mjs && node scripts/verify-go-no-go.mjs"
@@ -29,15 +29,20 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/node": "26.6.3",
+    "@types/pg": "8.23.0",
     "@vitest/coverage-v8": "5.0.3",
     "eslint": "10.11.0",
     "globals": "17.12.0",
     "markdownlint-cli2": "0.23.3",
     "prettier": "3.9.9",
-    "turbo": "2.11.5",
     "tsx": "4.23.15",
+    "turbo": "2.11.5",
     "typescript": "6.0.3",
     "typescript-eslint": "8.71.0",
     "vitest": "5.0.3"
+  },
+  "dependencies": {
+    "@clerk/backend": "3.22.0",
+    "pg": "8.23.0"
   }
 }

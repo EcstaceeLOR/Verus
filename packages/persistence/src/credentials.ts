@@ -20,6 +20,16 @@ export interface StoredApiKey {
   readonly workspaceStatus: "active" | "suspended" | "deleting";
 }
 
+export interface ApiKeySummary {
+  readonly keyId: string;
+  readonly prefix: string;
+  readonly scopes: readonly AuthorizationAction[];
+  readonly status: "active" | "retiring" | "revoked";
+  readonly createdAt: Date;
+  readonly expiresAt?: Date;
+  readonly lastUsedAt?: Date;
+}
+
 export interface DiscoverableSigningKey {
   readonly keyId: string;
   readonly algorithm: "Ed25519";
@@ -147,6 +157,38 @@ export class CredentialPersistence {
       status: row.status,
       workspaceStatus: row.workspace_status,
     });
+  }
+
+  async listApiKeys(sessionId: string): Promise<readonly Readonly<ApiKeySummary>[]> {
+    await this.#requireHuman(sessionId, "service_account.manage");
+    const result = await this.#client.query<{
+      key_id: string;
+      prefix: string;
+      scopes: AuthorizationAction[];
+      status: ApiKeySummary["status"];
+      created_at: Date;
+      expires_at: Date | null;
+      last_used_at: Date | null;
+    }>(
+      `SELECT key_id, prefix, scopes, status, created_at, expires_at, last_used_at
+       FROM api_keys WHERE workspace_id = $1
+       ORDER BY created_at DESC, key_id DESC
+       LIMIT 50`,
+      [this.#workspaceId],
+    );
+    return Object.freeze(
+      result.rows.map((row) =>
+        Object.freeze({
+          keyId: row.key_id,
+          prefix: row.prefix,
+          scopes: Object.freeze([...row.scopes]),
+          status: row.status,
+          createdAt: row.created_at,
+          ...(row.expires_at === null ? {} : { expiresAt: row.expires_at }),
+          ...(row.last_used_at === null ? {} : { lastUsedAt: row.last_used_at }),
+        }),
+      ),
+    );
   }
 
   async recordApiKeyUse(keyId: string): Promise<void> {

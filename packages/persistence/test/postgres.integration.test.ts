@@ -10,6 +10,7 @@ import capsuleFixture from "../../../contracts/v1/fixtures/valid/context-capsule
 import {
   loadMigrations,
   migrate,
+  findWorkspaceMemberships,
   provisionWorkspace,
   withWorkspaceTransaction,
   workspaceId,
@@ -68,12 +69,12 @@ describe("PostgreSQL persistence", () => {
     });
     expect(fresh).toMatchObject({
       fromVersion: 0,
-      toVersion: 10,
-      appliedVersions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      toVersion: 11,
+      appliedVersions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
     });
 
     const existing = await migrate(adminPool);
-    expect(existing).toMatchObject({ fromVersion: 10, toVersion: 10, appliedVersions: [] });
+    expect(existing).toMatchObject({ fromVersion: 11, toVersion: 11, appliedVersions: [] });
 
     const tables = await adminPool.query<{ table_name: string }>(
       `SELECT table_name FROM information_schema.tables
@@ -123,11 +124,11 @@ describe("PostgreSQL persistence", () => {
       migrate(adminPool, { targetVersion: 6, migrations: [...base, repaired] }),
     ).resolves.toMatchObject({
       toVersion: 6,
-      appliedVersions: [interruptedVersion, 10, 9, 8, 7],
+      appliedVersions: [interruptedVersion, 11, 10, 9, 8, 7],
     });
     await expect(migrate(adminPool)).resolves.toMatchObject({
-      toVersion: 10,
-      appliedVersions: [7, 8, 9, 10],
+      toVersion: 11,
+      appliedVersions: [7, 8, 9, 10, 11],
     });
   });
 
@@ -140,6 +141,9 @@ describe("PostgreSQL persistence", () => {
     await adminPool.query("REVOKE INSERT, UPDATE, DELETE ON identities FROM verus_test_app");
     await adminPool.query(
       "GRANT EXECUTE ON FUNCTION verus_resolve_identity(text, text, text) TO verus_test_app",
+    );
+    await adminPool.query(
+      "GRANT EXECUTE ON FUNCTION verus_workspaces_for_identity(text, text) TO verus_test_app",
     );
     const appUrl = new URL(connectionString);
     appUrl.username = "verus_test_app";
@@ -337,6 +341,20 @@ describe("PostgreSQL persistence", () => {
         occurredAt,
       });
     });
+
+    await expect(
+      findWorkspaceMemberships(appPool, {
+        provider: "oidc",
+        providerSubjectDigest: digest("1"),
+      }),
+    ).resolves.toEqual([
+      {
+        workspaceId: workspaceA,
+        membershipId: ownerMembershipId,
+        role: "owner",
+        status: "active",
+      },
+    ]);
 
     await withWorkspaceTransaction(appPool, workspaceA, async (store) => {
       const identity = store.identity();

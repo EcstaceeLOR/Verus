@@ -1,15 +1,17 @@
+import { Show, SignInButton, UserButton, useAuth } from "@clerk/react";
 import { useCallback, useEffect, useState } from "react";
 
 import { AgentPlayground } from "./AgentPlayground.js";
 import { BenchmarkProof } from "./BenchmarkProof.js";
+import { ProductConsole } from "./ProductConsole.js";
 import { ScanWorkspace } from "./ScanWorkspace.js";
 import { statusCopy, type ConnectionState } from "./status.js";
 import { VerusLogo } from "./VerusLogo.js";
 
-type View = "overview" | "playground" | "proof" | "scan";
+type View = "console" | "overview" | "playground" | "proof" | "scan";
 type ScannerPreset = "attack" | "safe";
 
-export function App() {
+export function App({ authEnabled = false }: { readonly authEnabled?: boolean }) {
   const [connection, setConnection] = useState<ConnectionState>("checking");
   const [view, setView] = useState<View>("overview");
   const [scannerPreset, setScannerPreset] = useState<ScannerPreset>();
@@ -42,6 +44,12 @@ export function App() {
     setPlaygroundPreset(preset);
     setView("playground");
   }
+
+  useEffect(() => {
+    if (authEnabled && new URLSearchParams(window.location.search).has("invite")) {
+      setView("console");
+    }
+  }, [authEnabled]);
 
   return (
     <div className="app-shell">
@@ -85,21 +93,32 @@ export function App() {
           >
             Scanner
           </button>
+          {authEnabled ? (
+            <AuthNavigation
+              isCurrent={view === "console"}
+              onOpenConsole={() => setView("console")}
+            />
+          ) : null}
         </nav>
-        <button
-          className={"service-pill service-pill--" + connection}
-          type="button"
-          onClick={() => void checkConnection()}
-          disabled={connection === "checking"}
-          aria-label={status.label + ". " + status.message + ". Check service again."}
-        >
-          <span aria-hidden="true" className="status-dot" />
-          {connection === "checking" ? "Checking" : status.label}
-        </button>
+        <div className="topbar-actions">
+          <button
+            className={`service-pill service-pill--${connection}`}
+            type="button"
+            onClick={() => void checkConnection()}
+            disabled={connection === "checking"}
+            aria-label={`${status.label}. ${status.message}. Check service again.`}
+          >
+            <span aria-hidden="true" className="status-dot" />
+            {connection === "checking" ? "Checking" : status.label}
+          </button>
+          {authEnabled ? <AuthAccount /> : null}
+        </div>
       </header>
 
       <main id="content" className="content" tabIndex={-1}>
-        {view === "overview" ? (
+        {view === "console" && authEnabled ? (
+          <AuthenticatedConsole onOpenScanner={() => openScanner()} />
+        ) : view === "overview" ? (
           <div className="overview">
             <section className="hero" aria-labelledby="hero-heading">
               <div className="hero-copy">
@@ -135,6 +154,7 @@ export function App() {
               <div
                 className="firewall-demo"
                 aria-label="Example of Verus blocking malicious context"
+                role="img"
               >
                 <div className="demo-source">
                   <div className="demo-label">
@@ -236,6 +256,67 @@ export function App() {
       </footer>
     </div>
   );
+}
+
+function AuthNavigation({
+  isCurrent,
+  onOpenConsole,
+}: {
+  readonly isCurrent: boolean;
+  readonly onOpenConsole: () => void;
+}) {
+  return (
+    <Show when="signed-in">
+      <button
+        aria-current={isCurrent ? "page" : undefined}
+        className="nav-button"
+        type="button"
+        onClick={onOpenConsole}
+      >
+        Workspace
+      </button>
+    </Show>
+  );
+}
+
+function AuthAccount() {
+  return (
+    <>
+      <Show when="signed-out">
+        <SignInButton mode="modal">
+          <button className="sign-in-action" type="button">
+            Sign in
+          </button>
+        </SignInButton>
+      </Show>
+      <Show when="signed-in">
+        <UserButton />
+      </Show>
+    </>
+  );
+}
+
+function AuthenticatedConsole({ onOpenScanner }: { readonly onOpenScanner: () => void }) {
+  const { getToken, isLoaded, isSignedIn } = useAuth();
+  if (!isLoaded)
+    return (
+      <div className="auth-loading" role="status">
+        Loading secure console…
+      </div>
+    );
+  if (!isSignedIn) {
+    return (
+      <div className="auth-loading">
+        <h1>Sign in to open your workspace.</h1>
+        <SignInButton mode="modal">
+          <button className="primary-action" type="button">
+            Sign in
+          </button>
+        </SignInButton>
+      </div>
+    );
+  }
+  return <ProductConsole getToken={() => getToken()} onOpenScanner={onOpenScanner} />;
 }
 
 function ShieldIcon() {

@@ -30,6 +30,22 @@ interface ServiceGrantRow {
   workspace_id: WorkspaceId;
 }
 
+export interface MembershipRecord {
+  readonly membershipId: string;
+  readonly role: HumanRole;
+  readonly status: "active" | "invited" | "removed" | "suspended";
+  readonly joinedAt?: Date;
+  readonly createdAt: Date;
+}
+
+export interface InvitationRecord {
+  readonly invitationId: string;
+  readonly role: Exclude<HumanRole, "owner">;
+  readonly status: "accepted" | "expired" | "pending" | "revoked";
+  readonly expiresAt: Date;
+  readonly createdAt: Date;
+}
+
 function humanStatus(row: HumanGrantRow): GrantStatus {
   if (row.identity_status !== "active" || ["invited", "removed"].includes(row.membership_status)) {
     return "revoked";
@@ -145,6 +161,111 @@ export class IdentityPersistence {
     if (grant === undefined)
       throw new VerusError("AUTHORIZATION_DENIED", "Session grant is unavailable.");
     return grant;
+  }
+
+  /**
+   * Refreshes the stable session derived from an already-verified identity-provider session.
+   * A conflicting membership cannot take over the identifier.
+   */
+  async ensureHumanSession(input: {
+    readonly sessionId: string;
+    readonly identityId: string;
+    readonly provider: string;
+    readonly providerSubjectDigest: string;
+    readonly expiresAt: Date;
+  }): Promise<AuthorizationGrant> {
+    const resolvedIdentityId = await this.resolveIdentity(input);
+    const member = await this.#client.query<{
+      grant_version: string;
+      membership_id: string;
+    }>(
+      `SELECT membership_id, grant_version FROM memberships
+       WHERE workspace_id = $1 AND identity_id = $2 AND status = 'active'`,
+      [this.#workspaceId, resolvedIdentityId],
+    );
+    const row = member.rows[0];
+    if (row === undefined)
+      throw new VerusError("AUTHORIZATION_DENIED", "No active membership exists.");
+    const session = await this.#client.query(
+      `INSERT INTO authorization_sessions
+         (workspace_id, session_id, subject_kind, membership_id, grant_version, expires_at,
+          last_seen_at)
+       VALUES ($1, $2, 'human', $3, $4, $5, clock_timestamp())
+       ON CONFLICT (workspace_id, session_id) DO UPDATE
+       SET grant_version = EXCLUDED.grant_version,
+           expires_at = EXCLUDED.expires_at,
+           revoked_at = NULL,
+           revocation_reason = NULL,
+           last_seen_at = clock_timestamp()
+       WHERE authorization_sessions.subject_kind = 'human'
+         AND authorization_sessions.membership_id = EXCLUDED.membership_id`,
+      [this.#workspaceId, input.sessionId, row.membership_id, row.grant_version, input.expiresAt],
+    );
+    if (session.rowCount !== 1)
+      throw new VerusError("AUTHORIZATION_DENIED", "Session identity does not match membership.");
+    const grant = await this.resolveHumanGrant(input.sessionId);
+    if (grant === undefined)
+      throw new VerusError("AUTHORIZATION_DENIED", "Session grant is unavailable.");
+    return grant;
+  }
+
+  async listMemberships(sessionId: string): Promise<readonly Readonly<MembershipRecord>[]> {
+    await this.#requireHuman(sessionId, "membership.read");
+    const result = await this.#client.query<{
+      membership_id: string;
+      role: HumanRole;
+      status: MembershipRecord["status"];
+      joined_at: Date | null;
+      created_at: Date;
+    }>(
+      `SELECT membership_id, role, status, joined_at, created_at
+       FROM memberships WHERE workspace_id = $1 AND status <> 'removed'
+       ORDER BY CASE role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END,
+                created_at, membership_id`,
+      [this.#workspaceId],
+    );
+    return Object.freeze(
+      result.rows.map((row) =>
+        Object.freeze({
+          membershipId: row.membership_id,
+          role: row.role,
+          status: row.status,
+          ...(row.joined_at === null ? {} : { joinedAt: row.joined_at }),
+          createdAt: row.created_at,
+        }),
+      ),
+    );
+  }
+
+  async listInvitations(sessionId: string): Promise<readonly Readonly<InvitationRecord>[]> {
+    await this.#requireHuman(sessionId, "membership.read");
+    const result = await this.#client.query<{
+      invitation_id: string;
+      role: Exclude<HumanRole, "owner">;
+      status: InvitationRecord["status"];
+      expires_at: Date;
+      created_at: Date;
+    }>(
+      `SELECT invitation_id, role,
+              CASE WHEN status = 'pending' AND expires_at <= clock_timestamp()
+                   THEN 'expired' ELSE status END AS status,
+              expires_at, created_at
+       FROM invitations WHERE workspace_id = $1
+       ORDER BY created_at DESC, invitation_id DESC
+       LIMIT 50`,
+      [this.#workspaceId],
+    );
+    return Object.freeze(
+      result.rows.map((row) =>
+        Object.freeze({
+          invitationId: row.invitation_id,
+          role: row.role,
+          status: row.status,
+          expiresAt: row.expires_at,
+          createdAt: row.created_at,
+        }),
+      ),
+    );
   }
 
   async resolveHumanGrant(sessionId: string): Promise<AuthorizationGrant | undefined> {

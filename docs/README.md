@@ -11,6 +11,7 @@ approval or a claim of investment truth.
 | Run Verus locally                           | [Local development](development/local-development.md)                                                      |
 | Recreate staging or promote a release       | [Staged deployments](../deploy/README.md)                                                                  |
 | Understand or maintain the hosted scanner   | [Hosted scanner experience](product/hosted-scanner.md)                                                     |
+| Onboard a workspace or manage access        | [Workspace onboarding and access](product/workspace-onboarding.md)                                         |
 | Connect an agent host through MCP           | [MCP server](../apps/mcp/README.md)                                                                        |
 | Integrate with the durable REST API         | [REST API v1](api/README.md)                                                                               |
 | Integrate an agent                          | [OpenAPI contract](api/openapi.v1.yaml), [SDK](../packages/sdk/README.md), or [MCP](../apps/mcp/README.md) |

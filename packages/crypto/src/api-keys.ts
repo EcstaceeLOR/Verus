@@ -28,6 +28,11 @@ export class IssuedApiKey {
     return value;
   }
 
+  destroy(): void {
+    this.#plaintext?.fill(0);
+    this.#plaintext = undefined;
+  }
+
   toJSON(): Readonly<Omit<ApiKeyVerifier, "verifier">> {
     const { keyId, prefix, scopes } = this.metadata;
     return Object.freeze({ keyId, prefix, scopes });

@@ -59,6 +59,13 @@ export interface ActivePolicyRecord {
   readonly document: Readonly<Record<string, unknown>>;
 }
 
+export interface WorkspaceMembershipLookup {
+  readonly workspaceId: WorkspaceId;
+  readonly membershipId: string;
+  readonly role: string;
+  readonly status: string;
+}
+
 const WORKSPACE_ID_PATTERN = /^ws_[0-9A-HJKMNP-TV-Z]{26}$/;
 const transitions = Object.freeze({
   accepted: ["queued", "cancelled"],
@@ -899,5 +906,31 @@ export async function provisionWorkspaceWithOwner(
       });
     },
     { isolation: "serializable", operationName: "workspace.provision_with_owner" },
+  );
+}
+
+/** Resolves only tenant identifiers owned by a previously verified external identity. */
+export async function findWorkspaceMemberships(
+  pool: Pool,
+  input: { readonly provider: string; readonly providerSubjectDigest: string },
+): Promise<readonly Readonly<WorkspaceMembershipLookup>[]> {
+  const result = await pool.query<{
+    workspace_id: string;
+    membership_id: string;
+    role: string;
+    membership_status: string;
+  }>("SELECT * FROM verus_workspaces_for_identity($1, $2)", [
+    input.provider,
+    input.providerSubjectDigest,
+  ]);
+  return Object.freeze(
+    result.rows.map((row) =>
+      Object.freeze({
+        workspaceId: workspaceId(row.workspace_id),
+        membershipId: row.membership_id,
+        role: row.role,
+        status: row.membership_status,
+      }),
+    ),
   );
 }

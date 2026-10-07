@@ -38,6 +38,7 @@ export {
   canTransitionScan,
   provisionWorkspace,
   provisionWorkspaceWithOwner,
+  findWorkspaceMemberships,
   withWorkspaceTransaction,
   workspaceId,
   type ScanRecord,
@@ -47,4 +48,7 @@ export {
   type ActivePolicyRecord,
   type ScanState,
   type WorkspaceId,
+  type WorkspaceMembershipLookup,
 } from "./workspace.js";
+export type { InvitationRecord, MembershipRecord } from "./identity.js";
+export type { ApiKeySummary } from "./credentials.js";

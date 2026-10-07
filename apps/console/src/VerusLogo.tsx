@@ -4,7 +4,7 @@ interface VerusLogoProps {
 
 export function VerusLogo({ compact = false }: VerusLogoProps) {
   return (
-    <div className="brand" aria-label="Verus">
+    <div className="brand">
       <svg
         className="brand-mark"
         viewBox="0 0 44 44"

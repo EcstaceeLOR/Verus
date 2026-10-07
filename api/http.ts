@@ -1,6 +1,8 @@
 export interface HostedRequest {
   readonly body?: unknown;
+  readonly headers?: Readonly<Record<string, string | string[] | undefined>>;
   readonly method?: string;
+  readonly url?: string;
 }
 
 export interface HostedResponse {
