@@ -2,6 +2,8 @@
 
 **The context firewall for trading agents.**
 
+**Live demo:** [verus-ochre.vercel.app](https://verus-ochre.vercel.app)
+
 Verus converts untrusted financial content into verified, structured, and auditable context before
 that content reaches an AI trading or research agent.
 
