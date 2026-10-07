@@ -15,7 +15,7 @@
     "check": "corepack pnpm run format:check && corepack pnpm run lint && corepack pnpm run typecheck:vercel && corepack pnpm run test:vercel && node scripts/run-turbo.mjs run typecheck test build && corepack pnpm run verify",
     "dev": "node scripts/run-turbo.mjs run dev",
     "format": "prettier --write .",
-    "format:check": "prettier --write apps/console/src/agent-playground.css apps/console/src/agent-playground.ts apps/console/src/AgentPlayground.tsx && git diff -- apps/console/src/agent-playground.css apps/console/src/agent-playground.ts apps/console/src/AgentPlayground.tsx && false",
+    "format:check": "prettier --check .",
     "infra:down": "docker compose --env-file .env.example -f deploy/compose/compose.yml down",
     "infra:up": "docker compose --env-file .env.example -f deploy/compose/compose.yml up -d --wait",
     "lint": "eslint eslint.config.mjs scripts api .github/*.mjs docs/**/*.mjs contracts/**/*.mjs && markdownlint-cli2 \"**/*.md\" && node scripts/run-turbo.mjs run lint",
