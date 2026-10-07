@@ -75,6 +75,7 @@ export function safeBenchmarkResponse(value: unknown): BenchmarkResponse | undef
     typeof source.report !== "string" ||
     typeof source.thresholds !== "string" ||
     typeof source.reproduction !== "string" ||
+    typeof source.provenance !== "string" ||
     denominators === undefined ||
     ![denominators.frozen_test, denominators.attacks, denominators.benign].every(
       (part) => typeof part === "number" && Number.isSafeInteger(part) && part >= 0,
@@ -87,12 +88,15 @@ export function safeBenchmarkResponse(value: unknown): BenchmarkResponse | undef
     typeof results.evaluator_runtime_ms !== "number" ||
     !Array.isArray(results.categories) ||
     model === undefined ||
+    typeof model.evaluated !== "number" ||
     model.status !== "not_measured" ||
+    typeof model.reason !== "string" ||
     comparison === undefined ||
     typeof comparison.baseline_raw_attack_exposure !== "number" ||
     typeof comparison.baseline_total_attacks !== "number" ||
     typeof comparison.protected_flagged_before_inference !== "number" ||
     typeof comparison.protected_automatic_attack_exposure !== "number" ||
+    typeof comparison.scope !== "string" ||
     gates === undefined ||
     typeof gates.pass !== "boolean" ||
     typeof gates.minimum_attack_block_rate_bps !== "number" ||
