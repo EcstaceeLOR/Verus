@@ -1,0 +1,37 @@
+name: Format Hackathon Benchmark
+
+on:
+  push:
+    branches:
+      - hackathon-151-benchmark-dashboard-v2
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: hackathon-151-benchmark-dashboard-v2
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version-file: .node-version
+      - run: corepack enable
+      - run: corepack pnpm install --frozen-lockfile
+      - name: Format benchmark changes
+        run: |
+          corepack pnpm exec prettier --write             api/benchmark.ts             apps/console/src/App.tsx             apps/console/src/BenchmarkProof.tsx             apps/console/src/benchmark-proof.ts             apps/console/src/benchmark-proof.css             apps/console/src/benchmark-proof.test.ts             test/hosted-scan.test.ts             README.md
+      - name: Commit formatting
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add             api/benchmark.ts             apps/console/src/App.tsx             apps/console/src/BenchmarkProof.tsx             apps/console/src/benchmark-proof.ts             apps/console/src/benchmark-proof.css             apps/console/src/benchmark-proof.test.ts             test/hosted-scan.test.ts             README.md
+          git commit -m "style: format benchmark judge surface"
+          git push origin HEAD:hackathon-151-benchmark-dashboard-v2
