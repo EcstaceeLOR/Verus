@@ -5,12 +5,8 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   resolve: {
     alias: {
-      "@verus/contracts": fileURLToPath(
-        new URL("./packages/contracts/src/index.ts", import.meta.url),
-      ),
-      "@verus/crypto": fileURLToPath(
-        new URL("./packages/crypto/src/index.ts", import.meta.url),
-      ),
+      "@verus/contracts": fileURLToPath(new URL("./packages/contracts/src/index.ts", import.meta.url)),
+      "@verus/crypto": fileURLToPath(new URL("./packages/crypto/src/index.ts", import.meta.url)),
     },
   },
 });
