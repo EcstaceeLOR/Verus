@@ -9,7 +9,7 @@ import type { HostedScanResult } from "./scan-workflow.js";
 import "./capsule-inspector.css";
 
 interface CapsuleInspectorProps {
-  readonly result?: HostedScanResult;
+  readonly result: HostedScanResult | undefined;
 }
 
 type InspectorTab = "readable" | "raw";
