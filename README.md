@@ -15,6 +15,48 @@ boundary: what the model is allowed to see and trust.
 > live trading or as the sole security decision-maker until your deployment has completed its
 > documented staging, recovery, security-review, and release gates.
 
+## Hackathon judge path
+
+The fastest way to understand Verus is the hosted **Agent demo**. It sends the same financial
+context down two paths: a baseline agent receives raw retrieved text, while the Verus-protected path
+runs the live hosted detector before that text can cross into inference.
+
+The judge flow exposes five product layers:
+
+1. **Protected vs. unprotected Agent Playground** — the protected side calls the real hosted
+   `/api/scan` endpoint and shows exactly what reaches the downstream agent for `allow`, `review`,
+   and `block` outcomes.
+2. **Bitget portfolio impact** — a credential-free sample uses the production
+   `ReadonlyBitgetPortfolio.impact()` mapper to connect an AAPL event to a Bitget Reality/rToken
+   exposure, while preserving the integration's GET-only, no-trade/no-transfer/no-withdraw boundary.
+3. **Attack Lab** — four scenarios execute against the hosted detector, while encoded/fragmented and
+   stale/conflicting-evidence scenarios are clearly labeled as full-pipeline threat classes rather
+   than falsely presented as hosted detections.
+4. **Context Capsule inspector** — the hosted scan remains explicitly unsigned. A separate capsule
+   derived from its digest, disposition, findings, and ruleset metadata is signed and independently
+   verified through Verus's production Ed25519 capsule code using an ephemeral demo key. The UI
+   states that signature integrity does not prove real-world factual truth or production key
+   provenance.
+5. **Reproducible benchmark proof** — the Proof view computes its results from the checked-in v1
+   frozen corpus and release thresholds. The current frozen denominator is four author-created
+   synthetic samples: three attacks and one benign control.
+
+The frozen regression currently reports 3/3 attack detections, 0/1 benign false positives, and 100%
+recall for each category represented in `frozen_test`. Those percentages are deliberately shown
+beside their tiny denominators; they are regression evidence, not a claim of universal prompt
+injection resistance.
+
+Reproduce the repository gate with:
+
+```sh
+corepack pnpm verify
+```
+
+See [the frozen evaluation report](corpus/v1/evaluation-report.v1.md),
+[the samples](corpus/v1/samples.v1.json), [the evaluator](corpus/v1/evaluate-detection.mjs), and
+[the release thresholds](corpus/v1/release-thresholds.v1.json) for the exact methodology and
+limitations.
+
 ## Quick start
 
 The repository pins Node.js 24.19.0 and pnpm 12.8.1. From a clean checkout:
