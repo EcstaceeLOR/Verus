@@ -170,7 +170,10 @@ export function BitgetImpactPanel() {
               <p>
                 {data.event.symbol} · confidence {(data.event.confidence * 100).toFixed(0)}%
               </p>
-              <span>{data.event.source} evidence mapping</span>
+              <span>
+                {data.event.source} evidence · as of{" "}
+                {new Date(data.event.as_of).toLocaleTimeString()}
+              </span>
             </article>
             <div className="bitget-impact__arrow" aria-hidden="true">
               →
