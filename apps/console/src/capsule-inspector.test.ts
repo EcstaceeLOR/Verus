@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  hostedCapsuleRequest,
-  safeSignedDemoCapsule,
-} from "./capsule-inspector.js";
+import { hostedCapsuleRequest, safeSignedDemoCapsule } from "./capsule-inspector.js";
 import type { HostedScanResult } from "./scan-workflow.js";
 
 const hosted: HostedScanResult = {

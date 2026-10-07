@@ -39,7 +39,10 @@ class MemorySecretProvider implements SecretProvider {
   readonly #values = new Map<string, Uint8Array>();
 
   async put(reference: string, value: SecretValue): Promise<void> {
-    this.#values.set(reference, value.use((bytes) => Uint8Array.from(bytes)));
+    this.#values.set(
+      reference,
+      value.use((bytes) => Uint8Array.from(bytes)),
+    );
   }
 
   async withSecret<T>(

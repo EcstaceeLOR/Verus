@@ -236,7 +236,11 @@
   border-radius: 14px;
   color: #c8d5ce;
   background: #080b0a;
-  font: 0.72rem/1.55 ui-monospace, SFMono-Regular, Consolas, monospace;
+  font:
+    0.72rem/1.55 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
 }
 
 .capsule-inspector__truth {

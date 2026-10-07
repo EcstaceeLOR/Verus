@@ -54,7 +54,6 @@ describe("hosted Bitget impact demo", () => {
   });
 });
 
-
 describe("hosted signed Context Capsule demo", () => {
   it("derives a signed and verified capsule without pretending the hosted scan was signed", async () => {
     const scan = inspectText({
