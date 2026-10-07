@@ -27,7 +27,6 @@ describe("hosted scan API", () => {
   });
 });
 
-
 describe("hosted Bitget impact demo", () => {
   it("uses the production rToken mapping algorithm without exchange credentials", () => {
     const result = sampleBitgetImpact(new Date("2026-10-07T09:00:00.000Z"));

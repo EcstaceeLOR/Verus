@@ -52,7 +52,9 @@ function safeImpactResponse(value: unknown): BitgetImpactResponse | undefined {
       ? (input.event as Record<string, unknown>)
       : undefined;
   const portfolio =
-    typeof input.portfolio === "object" && input.portfolio !== null && !Array.isArray(input.portfolio)
+    typeof input.portfolio === "object" &&
+    input.portfolio !== null &&
+    !Array.isArray(input.portfolio)
       ? (input.portfolio as Record<string, unknown>)
       : undefined;
   const boundary =
@@ -209,8 +211,8 @@ export function BitgetImpactPanel() {
               <small>Portfolio freshness</small>
               <strong>{impact.freshness}</strong>
               <span>
-                {Math.round(impact.age_ms / 1000)}s old /{" "}
-                {Math.round(impact.maximum_age_ms / 1000)}s limit
+                {Math.round(impact.age_ms / 1000)}s old / {Math.round(impact.maximum_age_ms / 1000)}
+                s limit
               </span>
             </div>
             <div>
@@ -228,11 +230,12 @@ export function BitgetImpactPanel() {
           <details className="bitget-impact__details">
             <summary>Inspect the production Bitget boundary</summary>
             <div>
-              {[...data.production_boundary.private_reads, ...data.production_boundary.public_reads].map(
-                (endpoint) => (
-                  <code key={endpoint}>GET {endpoint}</code>
-                ),
-              )}
+              {[
+                ...data.production_boundary.private_reads,
+                ...data.production_boundary.public_reads,
+              ].map((endpoint) => (
+                <code key={endpoint}>GET {endpoint}</code>
+              ))}
             </div>
             <p>
               Live deployments use a dedicated Bitget key attested as read-only. Verus rejects a

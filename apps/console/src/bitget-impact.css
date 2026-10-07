@@ -77,7 +77,11 @@
 .bitget-impact__flow p {
   margin: 8px 0 4px;
   color: #d1dad5;
-  font: 0.8rem/1.55 ui-monospace, SFMono-Regular, Consolas, monospace;
+  font:
+    0.8rem/1.55 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
 }
 
 .bitget-impact__flow article > span {
