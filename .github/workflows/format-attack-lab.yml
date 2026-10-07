@@ -1,0 +1,37 @@
+name: Format Hackathon Attack Lab
+
+on:
+  push:
+    branches:
+      - hackathon-149-attack-lab-v2
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: hackathon-149-attack-lab-v2
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version-file: .node-version
+      - run: corepack enable
+      - run: corepack pnpm install --frozen-lockfile
+      - name: Format Attack Lab files
+        run: |
+          corepack pnpm exec prettier --write             apps/console/src/AgentPlayground.tsx             apps/console/src/AttackLab.tsx             apps/console/src/attack-lab.ts             apps/console/src/attack-lab.css             apps/console/src/attack-lab.test.ts
+      - name: Commit formatting
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add             apps/console/src/AgentPlayground.tsx             apps/console/src/AttackLab.tsx             apps/console/src/attack-lab.ts             apps/console/src/attack-lab.css             apps/console/src/attack-lab.test.ts
+          git commit -m "style: format Attack Lab"
+          git push origin HEAD:hackathon-149-attack-lab-v2
