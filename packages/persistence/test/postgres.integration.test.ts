@@ -572,15 +572,15 @@ describe("PostgreSQL persistence", () => {
     appPool = undefined;
     const down = await migrate(adminPool, { targetVersion: 0 });
     expect(down).toMatchObject({
-      fromVersion: 10,
+      fromVersion: 11,
       toVersion: 0,
-      appliedVersions: [10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
+      appliedVersions: [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
     });
     const up = await migrate(adminPool);
     expect(up).toMatchObject({
       fromVersion: 0,
-      toVersion: 10,
-      appliedVersions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      toVersion: 11,
+      appliedVersions: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
     });
   });
 });
