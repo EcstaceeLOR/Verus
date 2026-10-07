@@ -4,6 +4,9 @@
 
 **Live demo:** [verus-ochre.vercel.app](https://verus-ochre.vercel.app)
 
+**Submission run record:**
+[AI Trading Desk research-task walkthrough and live evidence](docs/run-records/ai-trading-desk/README.md)
+
 Verus converts untrusted financial content into verified, structured, and auditable context before
 that content reaches an AI trading or research agent.
 
