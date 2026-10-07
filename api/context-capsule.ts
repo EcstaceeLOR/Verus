@@ -72,7 +72,7 @@ const audit: CapsuleAuditSink = {
   },
 };
 
-function identifier(prefix: string, seed: string): string {
+function identifier(prefix: string, seed: string): `${string}_${string}` {
   const digest = createHash("sha256").update(seed).digest().subarray(0, 16);
   let value = BigInt("0x" + Buffer.from(digest).toString("hex"));
   let encoded = "";
