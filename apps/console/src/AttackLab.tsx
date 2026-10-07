@@ -23,25 +23,22 @@ export function AttackLab({ onLoadScenario }: AttackLabProps) {
           </p>
         </div>
         <div className="attack-lab__legend" aria-label="Attack lab capability legend">
-          <span><i className="attack-lab__dot attack-lab__dot--live" /> Live hosted</span>
-          <span><i className="attack-lab__dot attack-lab__dot--pipeline" /> Full pipeline</span>
+          <span>
+            <i className="attack-lab__dot attack-lab__dot--live" /> Live hosted
+          </span>
+          <span>
+            <i className="attack-lab__dot attack-lab__dot--pipeline" /> Full pipeline
+          </span>
         </div>
       </div>
 
       <div className="attack-lab__grid">
         {attackScenarios.map((scenario) => (
-          <article
-            key={scenario.id}
-            className={"attack-card attack-card--" + scenario.support}
-          >
+          <article key={scenario.id} className={"attack-card attack-card--" + scenario.support}>
             <div className="attack-card__meta">
               <span>{scenario.category}</span>
               <strong>
-                <i
-                  className={
-                    "attack-lab__dot attack-lab__dot--" + scenario.support
-                  }
-                />
+                <i className={"attack-lab__dot attack-lab__dot--" + scenario.support} />
                 {scenario.support === "live" ? "LIVE" : "PIPELINE"}
               </strong>
             </div>
