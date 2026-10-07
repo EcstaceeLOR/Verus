@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { AgentPlayground } from "./AgentPlayground.js";
+import { BenchmarkProof } from "./BenchmarkProof.js";
 import { ScanWorkspace } from "./ScanWorkspace.js";
 import { statusCopy, type ConnectionState } from "./status.js";
 import { VerusLogo } from "./VerusLogo.js";
 
-type View = "overview" | "playground" | "scan";
+type View = "overview" | "playground" | "proof" | "scan";
 type ScannerPreset = "attack" | "safe";
 
 export function App() {
@@ -67,6 +68,14 @@ export function App() {
             onClick={() => openPlayground()}
           >
             Agent demo
+          </button>
+          <button
+            type="button"
+            aria-current={view === "proof" ? "page" : undefined}
+            className="nav-button"
+            onClick={() => setView("proof")}
+          >
+            Proof
           </button>
           <button
             type="button"
@@ -210,6 +219,8 @@ export function App() {
           </div>
         ) : view === "playground" ? (
           <AgentPlayground key={playgroundPreset} initialSample={playgroundPreset} />
+        ) : view === "proof" ? (
+          <BenchmarkProof />
         ) : scannerPreset ? (
           <ScanWorkspace initialSample={scannerPreset} />
         ) : (
