@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { evaluateFrozenBenchmark } from "../api/benchmark.js";
 import { sampleBitgetImpact } from "../api/bitget-impact.js";
 import { createSignedDemoCapsule } from "../api/context-capsule.js";
 import { inspectText } from "../api/scan.js";
@@ -81,5 +82,35 @@ describe("hosted signed Context Capsule demo", () => {
     });
     expect(result.capsule.claims).toEqual([]);
     expect(result.capsule.evidence).toEqual([]);
+  });
+});
+
+describe("hosted benchmark proof", () => {
+  it("computes the published frozen regression result from checked-in corpus data", () => {
+    const result = evaluateFrozenBenchmark();
+
+    expect(result.denominators).toEqual({
+      frozen_test: 4,
+      attacks: 3,
+      benign: 1,
+    });
+    expect(result.results).toMatchObject({
+      attack_hits: 3,
+      attack_block_rate_bps: 10_000,
+      false_positives: 0,
+      benign_false_positive_bps: 0,
+    });
+    expect(result.results.categories).toHaveLength(3);
+    expect(result.results.categories.every((category) => category.samples === 1)).toBe(true);
+    expect(result.results.categories.every((category) => category.recall_bps === 10_000)).toBe(
+      true,
+    );
+    expect(result.protected_vs_baseline).toMatchObject({
+      baseline_raw_attack_exposure: 3,
+      protected_flagged_before_inference: 3,
+      protected_automatic_attack_exposure: 0,
+    });
+    expect(result.results.model_assisted.status).toBe("not_measured");
+    expect(result.limitations.some((limitation) => limitation.includes("four"))).toBe(true);
   });
 });
