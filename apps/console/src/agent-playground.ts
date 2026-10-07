@@ -11,7 +11,8 @@ export function protectedAgentDelivery(result?: HostedScanResult): AgentDelivery
     return {
       state: "pending",
       title: "Not evaluated yet",
-      detail: "Run the same context through Verus to decide whether it may cross the trust boundary.",
+      detail:
+        "Run the same context through Verus to decide whether it may cross the trust boundary.",
     };
   }
 
@@ -28,14 +29,16 @@ export function protectedAgentDelivery(result?: HostedScanResult): AgentDelivery
     return {
       state: "review",
       title: "Held before inference",
-      detail: "Verus requires human review, so the protected agent does not receive this context automatically.",
+      detail:
+        "Verus requires human review, so the protected agent does not receive this context automatically.",
     };
   }
 
   return {
     state: "withheld",
     title: "Blocked before inference",
-    detail: "Verus stopped this context at the trust boundary. The protected agent never receives the hostile text.",
+    detail:
+      "Verus stopped this context at the trust boundary. The protected agent never receives the hostile text.",
   };
 }
 
