@@ -39,10 +39,7 @@ export function protectedAgentDelivery(result?: HostedScanResult): AgentDelivery
   };
 }
 
-export function protectedContextPreview(
-  text: string,
-  result?: HostedScanResult,
-): string {
+export function protectedContextPreview(text: string, result?: HostedScanResult): string {
   if (result === undefined) return "Run Verus to determine what crosses the trust boundary.";
   return result.disposition === "allow"
     ? text
