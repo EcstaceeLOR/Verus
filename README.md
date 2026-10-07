@@ -15,12 +15,11 @@ boundary: what the model is allowed to see and trust.
 > live trading or as the sole security decision-maker until your deployment has completed its
 > documented staging, recovery, security-review, and release gates.
 
-
 ## Hackathon judge path
 
 The fastest way to understand Verus is the hosted **Agent demo**. It shows the same financial
-context taking two paths: an unprotected agent receives raw retrieved text, while the Verus-protected
-path runs the live hosted detector before anything crosses into inference.
+context taking two paths: an unprotected agent receives raw retrieved text, while the
+Verus-protected path runs the live hosted detector before anything crosses into inference.
 
 The judge flow then exposes the product layers that sit behind that decision:
 
@@ -31,8 +30,8 @@ The judge flow then exposes the product layers that sit behind that decision:
 3. **Attack Lab** — live hosted attacks are separated from threat classes that require the full
    canonicalization and evidence pipeline.
 4. **Context Capsule inspector** — the live hosted result is explicitly unsigned; a separate v1
-   contract fixture demonstrates the richer signed capsule format without pretending the public
-   demo produced a live signature.
+   contract fixture demonstrates the richer signed capsule format without pretending the public demo
+   produced a live signature.
 5. **Reproducible benchmark proof** — the frozen v1 deterministic corpus currently contains three
    attack samples and one benign control. The checked-in evaluation report records 3/3 attack
    detections, 0/1 benign false positives, and 100% recall for each category represented in the
