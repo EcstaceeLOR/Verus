@@ -24,8 +24,8 @@ runs the live hosted detector before that text can cross into inference.
 The judge flow exposes five product layers:
 
 1. **Protected vs. unprotected Agent Playground** — the protected side calls the real hosted
-   `/api/scan` endpoint and shows exactly what reaches the downstream agent for `allow`,
-   `review`, and `block` outcomes.
+   `/api/scan` endpoint and shows exactly what reaches the downstream agent for `allow`, `review`,
+   and `block` outcomes.
 2. **Bitget portfolio impact** — a credential-free sample uses the production
    `ReadonlyBitgetPortfolio.impact()` mapper to connect an AAPL event to a Bitget Reality/rToken
    exposure, while preserving the integration's GET-only, no-trade/no-transfer/no-withdraw boundary.
@@ -41,9 +41,9 @@ The judge flow exposes five product layers:
    frozen corpus and release thresholds. The current frozen denominator is four author-created
    synthetic samples: three attacks and one benign control.
 
-The frozen regression currently reports 3/3 attack detections, 0/1 benign false positives, and
-100% recall for each category represented in `frozen_test`. Those percentages are deliberately
-shown beside their tiny denominators; they are regression evidence, not a claim of universal prompt
+The frozen regression currently reports 3/3 attack detections, 0/1 benign false positives, and 100%
+recall for each category represented in `frozen_test`. Those percentages are deliberately shown
+beside their tiny denominators; they are regression evidence, not a claim of universal prompt
 injection resistance.
 
 Reproduce the repository gate with:

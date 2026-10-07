@@ -85,7 +85,6 @@ describe("hosted signed Context Capsule demo", () => {
   });
 });
 
-
 describe("hosted benchmark proof", () => {
   it("computes the published frozen regression result from checked-in corpus data", () => {
     const result = evaluateFrozenBenchmark();
@@ -103,7 +102,9 @@ describe("hosted benchmark proof", () => {
     });
     expect(result.results.categories).toHaveLength(3);
     expect(result.results.categories.every((category) => category.samples === 1)).toBe(true);
-    expect(result.results.categories.every((category) => category.recall_bps === 10_000)).toBe(true);
+    expect(result.results.categories.every((category) => category.recall_bps === 10_000)).toBe(
+      true,
+    );
     expect(result.protected_vs_baseline).toMatchObject({
       baseline_raw_attack_exposure: 3,
       protected_flagged_before_inference: 3,

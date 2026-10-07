@@ -1,10 +1,6 @@
 import { useEffect, useState } from "react";
 
-import {
-  formatBps,
-  safeBenchmarkResponse,
-  type BenchmarkResponse,
-} from "./benchmark-proof.js";
+import { formatBps, safeBenchmarkResponse, type BenchmarkResponse } from "./benchmark-proof.js";
 import "./benchmark-proof.css";
 
 export function BenchmarkProof() {
@@ -101,7 +97,9 @@ function BenchmarkResult({ data }: { readonly data: BenchmarkResponse }) {
         <article className="benchmark-metric benchmark-metric--result">
           <small>Frozen benign false positives</small>
           <strong>{falsePositiveResult}</strong>
-          <p>{formatBps(data.results.benign_false_positive_bps)} on the frozen benign denominator.</p>
+          <p>
+            {formatBps(data.results.benign_false_positive_bps)} on the frozen benign denominator.
+          </p>
         </article>
         <article className="benchmark-metric benchmark-metric--result">
           <small>Represented category recall</small>
