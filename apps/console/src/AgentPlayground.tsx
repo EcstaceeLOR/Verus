@@ -30,10 +30,7 @@ export function AgentPlayground({ initialSample = "attack" }: AgentPlaygroundPro
   const delivery = protectedAgentDelivery(result);
   const verdict = result ? verdictPresentation(result.disposition) : undefined;
 
-  const baselinePreview = useMemo(
-    () => text.trim() || "No context supplied.",
-    [text],
-  );
+  const baselinePreview = useMemo(() => text.trim() || "No context supplied.", [text]);
   const protectedPreview = protectedContextPreview(text, result);
 
   async function inspect(event: FormEvent<HTMLFormElement>): Promise<void> {
@@ -81,7 +78,9 @@ export function AgentPlayground({ initialSample = "attack" }: AgentPlaygroundPro
   return (
     <div className="agent-playground">
       <header className="agent-playground__header">
-        <p className="eyebrow"><span /> Live agent trust-boundary demo</p>
+        <p className="eyebrow">
+          <span /> Live agent trust-boundary demo
+        </p>
         <h1>Same market context. Two very different security boundaries.</h1>
         <p>
           The baseline path shows what an agent receives when retrieved content is trusted directly.
@@ -89,22 +88,35 @@ export function AgentPlayground({ initialSample = "attack" }: AgentPlaygroundPro
         </p>
       </header>
 
-      <section className="agent-playground__pipeline" aria-label="Protected versus unprotected flow">
-        <div><small>01</small><strong>Untrusted financial context</strong></div>
+      <section
+        className="agent-playground__pipeline"
+        aria-label="Protected versus unprotected flow"
+      >
+        <div>
+          <small>01</small>
+          <strong>Untrusted financial context</strong>
+        </div>
         <span aria-hidden="true">→</span>
         <div className="agent-playground__fork">
-          <strong>Baseline</strong><small>raw text crosses directly</small>
+          <strong>Baseline</strong>
+          <small>raw text crosses directly</small>
         </div>
         <span aria-hidden="true">/</span>
         <div className="agent-playground__fork agent-playground__fork--verus">
-          <strong>VERUS</strong><small>inspect before inference</small>
+          <strong>VERUS</strong>
+          <small>inspect before inference</small>
         </div>
         <span aria-hidden="true">→</span>
-        <div><small>02</small><strong>Trading / research agent</strong></div>
+        <div>
+          <small>02</small>
+          <strong>Trading / research agent</strong>
+        </div>
       </section>
 
       <form className="agent-playground__input panel" onSubmit={(event) => void inspect(event)}>
-        <div className="panel-kicker"><span>1</span> SAME INPUT</div>
+        <div className="panel-kicker">
+          <span>1</span> SAME INPUT
+        </div>
         <div className="agent-playground__input-heading">
           <div>
             <h2>Financial context entering the agent stack</h2>
@@ -132,7 +144,11 @@ export function AgentPlayground({ initialSample = "attack" }: AgentPlaygroundPro
           rows={7}
           aria-label="Financial context to compare"
         />
-        {error ? <p className="form-error" role="alert">{error}</p> : null}
+        {error ? (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        ) : null}
         <button className="primary-action" type="submit" disabled={submitting}>
           {submitting ? "Running both paths…" : "Compare agent exposure"}
           {!submitting ? <span aria-hidden="true"> →</span> : null}
@@ -145,7 +161,10 @@ export function AgentPlayground({ initialSample = "attack" }: AgentPlaygroundPro
       </form>
 
       <div className="agent-playground__comparison">
-        <section className="agent-path agent-path--baseline" aria-labelledby="baseline-agent-heading">
+        <section
+          className="agent-path agent-path--baseline"
+          aria-labelledby="baseline-agent-heading"
+        >
           <div className="agent-path__topline">
             <span>UNPROTECTED</span>
             <strong>Raw context delivered</strong>
@@ -163,7 +182,9 @@ export function AgentPlayground({ initialSample = "attack" }: AgentPlaygroundPro
             <span aria-hidden="true">!</span>
             <div>
               <strong>Exposure exists before the agent reasons.</strong>
-              <p>Execution controls cannot remove hostile context that already influenced inference.</p>
+              <p>
+                Execution controls cannot remove hostile context that already influenced inference.
+              </p>
             </div>
           </div>
         </section>
@@ -186,7 +207,9 @@ export function AgentPlayground({ initialSample = "attack" }: AgentPlaygroundPro
           {result ? (
             <div className={"agent-verdict agent-verdict--" + result.disposition}>
               <div>
-                <span className="agent-verdict__symbol" aria-hidden="true">{verdict?.symbol}</span>
+                <span className="agent-verdict__symbol" aria-hidden="true">
+                  {verdict?.symbol}
+                </span>
                 <div>
                   <small>LIVE VERUS DECISION</small>
                   <strong>{result.disposition.toUpperCase()}</strong>
@@ -204,7 +227,9 @@ export function AgentPlayground({ initialSample = "attack" }: AgentPlaygroundPro
 
       {result ? (
         <section className="agent-playground__proof panel" aria-labelledby="agent-proof-heading">
-          <div className="panel-kicker"><span>2</span> WHY THE BOUNDARY CHANGED</div>
+          <div className="panel-kicker">
+            <span>2</span> WHY THE BOUNDARY CHANGED
+          </div>
           <div className="agent-playground__proof-grid">
             <div>
               <h2 id="agent-proof-heading">
@@ -227,7 +252,8 @@ export function AgentPlayground({ initialSample = "attack" }: AgentPlaygroundPro
                           <strong>{presentation.label}</strong>
                           <p>{presentation.explanation}</p>
                           <small>
-                            line {finding.location.line}, column {finding.location.column} · {finding.ruleId}
+                            line {finding.location.line}, column {finding.location.column} ·{" "}
+                            {finding.ruleId}
                           </small>
                         </div>
                         <span>{finding.severity}</span>
@@ -238,10 +264,22 @@ export function AgentPlayground({ initialSample = "attack" }: AgentPlaygroundPro
               )}
             </div>
             <dl className="agent-playground__metadata">
-              <div><dt>Scan ID</dt><dd>{result.scanId}</dd></div>
-              <div><dt>Ruleset</dt><dd>{result.ruleSetVersion}</dd></div>
-              <div><dt>Input digest</dt><dd>{result.inputDigest}</dd></div>
-              <div><dt>Processed</dt><dd>{new Date(result.processedAt).toLocaleString()}</dd></div>
+              <div>
+                <dt>Scan ID</dt>
+                <dd>{result.scanId}</dd>
+              </div>
+              <div>
+                <dt>Ruleset</dt>
+                <dd>{result.ruleSetVersion}</dd>
+              </div>
+              <div>
+                <dt>Input digest</dt>
+                <dd>{result.inputDigest}</dd>
+              </div>
+              <div>
+                <dt>Processed</dt>
+                <dd>{new Date(result.processedAt).toLocaleString()}</dd>
+              </div>
             </dl>
           </div>
         </section>
