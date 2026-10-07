@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from "react";
 
 import { AttackLab } from "./AttackLab.js";
 import { BitgetImpactPanel } from "./BitgetImpactPanel.js";
+import { CapsuleInspector } from "./CapsuleInspector.js";
 import type { AttackScenario } from "./attack-lab.js";
 import {
   findingPresentation,
@@ -298,6 +299,8 @@ export function AgentPlayground({ initialSample = "attack" }: AgentPlaygroundPro
           </div>
         </section>
       ) : null}
+
+      <CapsuleInspector result={result} />
 
       <BitgetImpactPanel />
 
