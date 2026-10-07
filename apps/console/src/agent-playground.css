@@ -146,16 +146,12 @@
 
 .agent-path--baseline {
   border-color: rgb(231 88 62 / 35%);
-  background:
-    linear-gradient(180deg, rgb(231 88 62 / 6%), transparent 36%),
-    var(--panel);
+  background: linear-gradient(180deg, rgb(231 88 62 / 6%), transparent 36%), var(--panel);
 }
 
 .agent-path--protected {
   border-color: rgb(90 222 174 / 32%);
-  background:
-    linear-gradient(180deg, rgb(90 222 174 / 6%), transparent 36%),
-    var(--panel);
+  background: linear-gradient(180deg, rgb(90 222 174 / 6%), transparent 36%), var(--panel);
 }
 
 .agent-path--review {
