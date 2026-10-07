@@ -2,6 +2,7 @@ import { useMemo, useState, type FormEvent } from "react";
 
 import { AttackLab } from "./AttackLab.js";
 import { BitgetImpactPanel } from "./BitgetImpactPanel.js";
+import { CapsuleInspector } from "./CapsuleInspector.js";
 import type { AttackScenario } from "./attack-lab.js";
 import {
   findingPresentation,
@@ -263,6 +264,8 @@ export function AgentPlayground({ initialSample = "attack" }: AgentPlaygroundPro
       <BitgetImpactPanel />
 
       <AttackLab onLoadScenario={loadAttackScenario} />
+
+      <CapsuleInspector result={result} />
 
       <p className="agent-playground__truth-note">
         Verus evaluates whether context is safe to expose to an agent. It does not place trades,
