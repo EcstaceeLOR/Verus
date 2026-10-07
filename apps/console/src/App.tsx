@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 
+import { AgentPlayground } from "./AgentPlayground.js";
 import { ScanWorkspace } from "./ScanWorkspace.js";
 import { statusCopy, type ConnectionState } from "./status.js";
 import { VerusLogo } from "./VerusLogo.js";
 
-type View = "overview" | "scan";
+type View = "overview" | "playground" | "scan";
 type ScannerPreset = "attack" | "safe";
 
 export function App() {
   const [connection, setConnection] = useState<ConnectionState>("checking");
   const [view, setView] = useState<View>("overview");
   const [scannerPreset, setScannerPreset] = useState<ScannerPreset>();
+  const [playgroundPreset, setPlaygroundPreset] = useState<ScannerPreset>("attack");
   const status = statusCopy(connection);
 
   const checkConnection = useCallback(async (): Promise<void> => {
@@ -35,6 +37,11 @@ export function App() {
     setView("scan");
   }
 
+  function openPlayground(preset: ScannerPreset = "attack"): void {
+    setPlaygroundPreset(preset);
+    setView("playground");
+  }
+
   return (
     <div className="app-shell">
       <a className="skip-link" href="#content">
@@ -55,6 +62,14 @@ export function App() {
           </button>
           <button
             type="button"
+            aria-current={view === "playground" ? "page" : undefined}
+            className="nav-button"
+            onClick={() => openPlayground()}
+          >
+            Agent demo
+          </button>
+          <button
+            type="button"
             aria-current={view === "scan" ? "page" : undefined}
             className="nav-button"
             onClick={() => openScanner()}
@@ -63,11 +78,11 @@ export function App() {
           </button>
         </nav>
         <button
-          className={`service-pill service-pill--${connection}`}
+          className={"service-pill service-pill--" + connection}
           type="button"
           onClick={() => void checkConnection()}
           disabled={connection === "checking"}
-          aria-label={`${status.label}. ${status.message}. Check service again.`}
+          aria-label={status.label + ". " + status.message + ". Check service again."}
         >
           <span aria-hidden="true" className="status-dot" />
           {connection === "checking" ? "Checking" : status.label}
@@ -88,15 +103,19 @@ export function App() {
                   instructions, credential theft, and tool coercion before they reach the model.
                 </p>
                 <div className="hero-actions">
-                  <button className="primary-action" type="button" onClick={() => openScanner()}>
-                    Inspect context <span aria-hidden="true">→</span>
+                  <button
+                    className="primary-action"
+                    type="button"
+                    onClick={() => openPlayground("attack")}
+                  >
+                    Run the agent demo <span aria-hidden="true">→</span>
                   </button>
                   <button
                     className="secondary-action"
                     type="button"
-                    onClick={() => openScanner("attack")}
+                    onClick={() => openPlayground("safe")}
                   >
-                    Try a blocked attack
+                    Compare safe context
                   </button>
                 </div>
                 <p className="privacy-line">
@@ -185,10 +204,12 @@ export function App() {
                 <small>Do not send to the agent</small>
               </div>
               <button className="text-action" type="button" onClick={() => openScanner("safe")}>
-                Test a safe sample →
+                Open the raw scanner →
               </button>
             </section>
           </div>
+        ) : view === "playground" ? (
+          <AgentPlayground key={playgroundPreset} initialSample={playgroundPreset} />
         ) : scannerPreset ? (
           <ScanWorkspace initialSample={scannerPreset} />
         ) : (
